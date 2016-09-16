@@ -156,5 +156,5 @@ sub-classes do not affect instances of the base class::
   Decorating with a different type (not a good idea) will register the different
   type and leave the base-class handler in place for the orginal type.
 
-  If your class also inhertits from an ABC interface you can use the SingleDispatchABCMeta metaclass instead.
+  If your class also inhertits from an ABC interface you can use the ``SingleDispatchABCMeta`` metaclass instead.
   
