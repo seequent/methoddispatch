@@ -1,7 +1,7 @@
 # methoddispatch
 python singledispatch implementation for methods
 
-PEP 443 <http://www.python.org/dev/peps/pep-0443/>`_ proposed to expose
+PEP 443 <http://www.python.org/dev/peps/pep-0443/> proposed to expose
 a mechanism in the ``functools`` standard library module in Python 3.4
 that provides a simple form of generic programming known as
 single-dispatch generic functions.
