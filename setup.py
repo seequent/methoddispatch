@@ -6,7 +6,7 @@ import methoddispatch
 
 setuptools.setup(
     name = "methoddispatch",
-    version = "1.0.1",
+    version = "1.0.2",
     author = "Tim Mitchell",
     author_email = "tim.mitchell@leapfrog3d.com",
     description = "singledispatch decorator for instance methods.",
