@@ -161,6 +161,14 @@
       type and leave the base-class handler in place for the orginal type.
 
       If your class also inhertits from an ABC interface you can use the SingleDispatchABCMeta metaclass instead.
+
+      Accessing the method ``foo`` via a class will use the dispatch registry of that class::
+
+      >>> SubClass2.foo(s, 1)
+      'my int'
+      >>> BaseClass.foo(s, 1)
+      'int'
+
 """
 from abc import get_cache_token, ABCMeta
 from functools import update_wrapper, _find_impl
@@ -231,12 +239,13 @@ class singledispatch(object):
         if cls is not None and not isinstance(cls, SingleDispatchMeta):
             raise ValueError('singledispatch can only be used on methods of SingleDispatchMeta types')
         if instance is None:
-            return self
+            def wrapper(*args, **kwargs):
+                return self.dispatch(args[1].__class__)(*args, **kwargs)
         else:
             def wrapper(*args, **kwargs):
                 return self.dispatch(args[0].__class__)(instance, *args, **kwargs)
-            update_wrapper(wrapper, self.func)
-            return wrapper
+        update_wrapper(wrapper, self.func)
+        return wrapper
 
     def __call__(self, *args, **kw):
         return self.dispatch(args[0].__class__)(*args, **kw)

@@ -6,10 +6,10 @@ import methoddispatch
 
 setuptools.setup(
     name = "methoddispatch",
-    version = "1.0.2",
+    version = "1.0.3",
     author = "Tim Mitchell",
     author_email = "tim.mitchell@leapfrog3d.com",
-    description = "singledispatch decorator for instance methods.",
+    description = "singledispatch decorator for functions and instance methods.",
     license = "BSD",
     keywords = "single dispatch decorator method",
     url = "https://github.com/tim-mitchell/methoddispatch",

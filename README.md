@@ -22,7 +22,7 @@ argument, create your function accordingly::
 To add overloaded implementations to the function, use the
 ``register()`` attribute of the generic function. It is a decorator,
 taking a type parameter and decorating a function implementing the
-operation for that type::
+operation for that type
 
     >>> @fun.register(int)
     ... def _(arg, verbose=False):
@@ -48,7 +48,7 @@ To enable registering lambdas and pre-existing functions, the
 
 The ``register()`` attribute returns the undecorated function which
 enables decorator stacking, pickling, as well as creating unit tests for
-each variant independently::
+each variant independently
 
     >>> from decimal import Decimal
     >>> @fun.register(float)
@@ -142,7 +142,7 @@ sub-classes do not affect instances of the base class::
     >>> b.foo(1.0)
     'default'
 
-  Method overrides do not need to provide the ``register`` decorator again::
+  Method overrides do not need to provide the ``register`` decorator again
 
     >>> class SubClass2(BaseClass):
     ...     def foo_int(self, bar):
@@ -158,3 +158,9 @@ sub-classes do not affect instances of the base class::
 
   If your class also inhertits from an ABC interface you can use the ``SingleDispatchABCMeta`` metaclass instead.
   
+  Accessing the method ``foo`` via a class will use the dispatch registry for that class
+
+      >>> SubClass2.foo(s, 1)
+      'my int'
+      >>> BaseClass.foo(s, 1)
+      'int'
