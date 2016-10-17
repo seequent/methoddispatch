@@ -84,3 +84,8 @@ class TestMethodDispatch(unittest.TestCase):
         self.assertEqual('default', func(self))
         self.assertEqual(False, func(True))
         self.assertEqual(True, func(False))
+
+    def test_class_access(self):
+        s = SubClass()
+        self.assertEqual(BaseClass.foo(s, 1), 'int')
+        self.assertEqual(SubClass.foo(s, 1), 'sub int')
