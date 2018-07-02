@@ -69,12 +69,7 @@ class singledispatch(object):
     def __get__(self, instance, cls=None):
         if cls is not None and not isinstance(cls, SingleDispatchMeta):
             raise ValueError('singledispatch can only be used on methods of SingleDispatchMeta types')
-        if instance is None:
-            def wrapper(*args, **kwargs):
-                return self.dispatch(args[1].__class__)(*args, **kwargs)
-        else:
-            def wrapper(*args, **kwargs):
-                return self.dispatch(args[0].__class__)(instance, *args, **kwargs)
+        wrapper = sd_method(self, instance)
         update_wrapper(wrapper, self.func)
         return wrapper
 
@@ -91,6 +86,26 @@ class singledispatch(object):
 
     def get_registered_types(self):
         return [type_ for type_ in self._registry.keys() if type_ is not object]
+
+
+class sd_method(object):
+    """ A singledispatch method """
+    def __init__(self, s_d, instance):
+        self._instance = instance
+        self._s_d = s_d
+
+    def dispatch(self, cls):
+        return self._s_d.dispatch(cls)
+
+    @property
+    def registry(self):
+        return self._s_d.registry
+
+    def __call__(self, *args, **kwargs):
+        if self._instance is None:
+            return self.dispatch(args[1].__class__)(*args, **kwargs)
+        else:
+            return self.dispatch(args[0].__class__)(self._instance, *args, **kwargs)
 
 
 def _fixup_class_attributes(cls):
