@@ -7,8 +7,8 @@ import methoddispatch
 setuptools.setup(
     name="methoddispatch",
     version="1.1.0",
-    author="ARANZ Geo",
-    author_email="tim.mitchell@aranzgeo.com",
+    author="Tim Mitchell",
+    author_email="tim.mitchell@seequent.com",
     description="singledispatch decorator for functions and instance methods.",
     license="BSD",
     keywords="single dispatch decorator method",

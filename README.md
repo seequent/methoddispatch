@@ -1,28 +1,20 @@
 # methoddispatch
-python singledispatch implementation for methods
 
-PEP 443 <http://www.python.org/dev/peps/pep-0443/> proposed to expose
-a mechanism in the ``functools`` standard library module in Python 3.4
-that provides a simple form of generic programming known as
-single-dispatch generic functions.
+ [PEP 443](http://www.python.org/dev/peps/pep-0443) proposed to expose a mechanism in the ``functools`` standard library module in Python 3.4 that provides a simple form of generic programming known as single-dispatch generic functions.
 
 This library extends this functionality to instance methods (and works for functions too)
 
-To define a generic method , decorate it with the ``@singledispatch``
-decorator. Note that the dispatch happens on the type of the first
-argument, create your function accordingly::
+To define a generic method , decorate it with the ``@singledispatch`` decorator. Note that the dispatch happens on the type of the first argument, create your function accordingly::
 
-    >>> from methoddispatch import singledispatch
+    >>> from methoddispatch import singledispatch, register, SingleDispatch
+
     >>> @singledispatch
     ... def fun(arg, verbose=False):
     ...     if verbose:
     ...         print("Let me just say,", end=" ")
     ...     print(arg)
 
-To add overloaded implementations to the function, use the
-``register()`` attribute of the generic function. It is a decorator,
-taking a type parameter and decorating a function implementing the
-operation for that type
+To add overloaded implementations to the function, use the ``register()`` attribute of the generic function. It is a decorator, taking a type parameter and decorating a function implementing the operation for that type
 
     >>> @fun.register(int)
     ... def _(arg, verbose=False):
@@ -37,8 +29,7 @@ operation for that type
     ...     for i, elem in enumerate(arg):
     ...         print(i, elem)
 
-To enable registering lambdas and pre-existing functions, the
-``register()`` attribute can be used in a functional form::
+To enable registering lambdas and pre-existing functions, the ``register()`` attribute can be used in a functional form::
 
     >>> def nothing(arg, verbose=False):
     ...     print("Nothing.")
@@ -46,9 +37,7 @@ To enable registering lambdas and pre-existing functions, the
     >>> fun.register(type(None), nothing)
     <function nothing at 0x03D3FDB0>
 
-The ``register()`` attribute returns the undecorated function which
-enables decorator stacking, pickling, as well as creating unit tests for
-each variant independently
+The ``register()`` attribute returns the undecorated function which enables decorator stacking, pickling, as well as creating unit tests for each variant independently
 
     >>> from decimal import Decimal
     >>> @fun.register(float)
@@ -61,8 +50,7 @@ each variant independently
     >>> fun_num is fun
     False
 
-When called, the generic function dispatches on the type of the first
-argument::
+When called, the generic function dispatches on the type of the first argument::
 
     >>> fun("Hello, world.")
     Hello, world.
@@ -81,22 +69,16 @@ argument::
     >>> fun(1.23)
     0.615
 
-Where there is no registered implementation for a specific type, its
-method resolution order is used to find a more generic implementation.
-The original function decorated with ``@singledispatch`` is registered
-for the base ``object`` type, which means it is used if no better
-implementation is found.
+Where there is no registered implementation for a specific type, its method resolution order is used to find a more generic implementation. The original function decorated with ``@singledispatch`` is registered for the base ``object`` type, which means it is used if no better implementation is found.
 
-To check which implementation will the generic function choose for
-a given type, use the ``dispatch()`` attribute::
+To check which implementation will the generic function choose for a given type, use the ``dispatch()`` attribute::
 
     >>> fun.dispatch(float)
     <function fun_num at 0x1035a2840>
     >>> fun.dispatch(dict)    # note: default implementation
     <function fun at 0x103fe0000>
 
-To access all registered implementations, use the read-only ``registry``
-attribute::
+To access all registered implementations, use the read-only ``registry`` attribute::
 
     >>> fun.registry.keys()
     dict_keys([<class 'NoneType'>, <class 'int'>, <class 'object'>,
@@ -107,11 +89,9 @@ attribute::
     >>> fun.registry[object]
     <function fun at 0x103fe0000>
 
-Decorating class methods requires the class have ``SingleDispatchMeta`` as
-a metaclass.  The metaclass ensures that the dipatch registry of
-sub-classes do not affect instances of the base class::
+Decorating class methods requires the class to inherit from ``SingleDispatch``
 
-    >>> class BaseClass(metaclass=SingleDispatchMeta):
+    >>> class BaseClass(SingleDispatch):
     ...     @singledispatch
     ...     def foo(self, bar):
     ...         return 'default'
@@ -126,8 +106,8 @@ sub-classes do not affect instances of the base class::
     >>> b.foo(1)
     'int'
 
-  Subclasses can extend the type registry of the function on the base class with their own overrides.
-  Because the ``foo`` function is not in scope, the ``methoddispatch.register`` decorator must be used instead::
+Subclasses can extend the type registry of the function on the base class with their own overrides.
+Because the ``foo`` function is not in scope, the ``methoddispatch.register`` decorator must be used instead
 
     >>> class SubClass(BaseClass):
     ...     @register('foo', float)
@@ -139,10 +119,14 @@ sub-classes do not affect instances of the base class::
     'int'
     >>> s.foo(1.0)
     'float'
+
+The ``SingleDispatch`` mixin class ensures that each subclass has it's own independant copy of the dispatch registry
+
+    >>> b = BaseClass()
     >>> b.foo(1.0)
     'default'
 
-  Method overrides do not need to provide the ``register`` decorator again
+Method overrides do not need to provide the ``register`` decorator again to be used in the dispatch of ``foo``
 
     >>> class SubClass2(BaseClass):
     ...     def foo_int(self, bar):
@@ -152,13 +136,29 @@ sub-classes do not affect instances of the base class::
     >>> s.foo(1)
     'my int'
 
-  Providing the register decorator with the same type will also work.
-  Decorating with a different type (not a good idea) will register the different
-  type and leave the base-class handler in place for the orginal type.
+However, providing the register decorator with the same type will also work.
+Decorating a method override with a different type (not a good idea) will register the different type and leave the base-class handler in place for the orginal type.
 
-  If your class also inhertits from an ABC interface you can use the ``SingleDispatchABCMeta`` metaclass instead.
-  
-  Accessing the method ``foo`` via a class will use the dispatch registry for that class
+In Python 3.7 and later, for functions annotated with types, the decorator will infer the type of the first argument automatically as shown below
+
+    >>> class BaseClass(SingleDispatch):
+    ...     @singledispatch
+    ...     def foo(self, bar):
+    ...         return 'default'
+    ...
+    ...     @foo.register
+    ...     def foo_int(self, bar: int):
+    ...         return 'int'
+    ...
+    >>> class SubClass(BaseClass):
+    ...     @register('foo')
+    ...     def foo_float(self, bar: float):
+    ...         return 'float'
+
+In Python 3.6 and earlier, the ``SingleDispatch`` class uses a meta-class ``SingleDispatchMeta`` to manage the dispatch registries.  However in Python 3.7 and later the ``__init_subclass__`` method is used instead.
+If your class also inhertits from an ABC interface you can use the ``SingleDispatchABCMeta`` metaclass in Python 3.6 and earlier.
+
+Finally, accessing the method ``foo`` via a class will use the dispatch registry for that class
 
       >>> SubClass2.foo(s, 1)
       'my int'
