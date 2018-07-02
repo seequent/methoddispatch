@@ -95,6 +95,21 @@ class TestMethodDispatch(unittest.TestCase):
         self.assertEqual(BaseClass.foo(s, 1), 'int')
         self.assertEqual(SubClass.foo(s, 1), 'sub int')
 
+    def test_class_extra_attributes(self):
+        """ Check that dispatch and registry attributes are accessible """
+        self.assertTrue(hasattr(SubClass.foo, 'dispatch'))
+        self.assertTrue(hasattr(SubClass.foo, 'registry'))
+        self.assertIs(SubClass.foo.dispatch(float), SubClass.__dict__['foo_float'])
+        self.assertEqual(set(SubClass.foo.registry.keys()), set([float, object, int]))
+
+    def test_instance_extra_attributes(self):
+        """ Check that dispatch and registry attributes are accessible """
+        s = SubClass()
+        self.assertTrue(hasattr(s.foo, 'dispatch'))
+        self.assertTrue(hasattr(s.foo, 'registry'))
+        self.assertIs(s.foo.dispatch(float), SubClass.__dict__['foo_float'])
+        self.assertEqual(set(s.foo.registry.keys()), set([float, object, int]))
+
     @unittest.skipIf(six.PY2, 'docs are in python3 syntax')
     def test_docs(self):
         num_failures, num_tests = doctest.testmod(methoddispatch, name='methoddispatch')
