@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from abc import get_cache_token, ABCMeta
-from functools import update_wrapper, _find_impl
+from functools import update_wrapper, _find_impl, _c3_mro
 from types import MappingProxyType
 from weakref import WeakKeyDictionary
 
