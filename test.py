@@ -4,8 +4,9 @@ import unittest
 import methoddispatch
 from methoddispatch import singledispatch, register, SingleDispatch, SingleDispatchABC
 import abc
-import six
 import doctest
+import six
+import sys
 
 
 class BaseClass(SingleDispatch):
@@ -100,3 +101,21 @@ class TestMethodDispatch(unittest.TestCase):
         # we expect 6 failures as a result like <function fun_num at 0x1035a2840> is not deterministic
         self.assertEqual(num_failures, 6)
         self.assertGreater(num_tests, 30)
+
+    @unittest.skipIf(sys.version_info < (3, 7), 'docs are in python3 syntax')
+    def test_annotations(self):
+        exec(py_37_tests)
+
+
+py_37_tests = """
+def test_annotations(self):
+    class AnnClass(BaseClass):
+        @register('foo')
+        def foo_int(self, bar: int):
+            return 'ann int'
+
+    c = AnnClass()
+    self.assertEqual(c.foo(1), 'ann int')
+
+test_annotations(self)
+"""

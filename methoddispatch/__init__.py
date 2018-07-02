@@ -175,6 +175,9 @@ import sys
 if sys.version_info[0] < 3:
     from .methoddispatch2 import *
     del methoddispatch2
+elif sys.version_info >= (3, 7):
+    from .methoddispatch37 import *
+    del methoddispatch37
 else:
     from .methoddispatch3 import *
     del methoddispatch3
