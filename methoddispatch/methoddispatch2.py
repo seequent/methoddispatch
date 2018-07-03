@@ -265,17 +265,20 @@ class sd_method(object):
             return self.dispatch(args[0].__class__)(self._instance, *args, **kwargs)
 
 
-def _fixup_class_attributes(attributes, bases):
+def _fixup_class_attributes(cls):
     generics = []
-    for base in bases:
+    attributes = cls.__dict__
+    patched = set()
+    for base in cls.mro()[1:]:
         if isinstance(base, SingleDispatchMeta):
             for name, value in base.__dict__.items():
-                if isinstance(value, singledispatch):
+                if isinstance(value, singledispatch) and name not in patched:
                     if name in attributes:
                         raise RuntimeError('Cannot override generic function.  '
-                                           'Try @register({}, object) instead.'.format(name))
+                                           'Try @register("{}", object) instead.'.format(name))
                     generic = value.copy()
-                    attributes[name] = generic
+                    setattr(cls, name, generic)
+                    patched.add(name)
                     generics.append(generic)
     for name, value in attributes.items():
         if not callable(value) or isinstance(value, singledispatch):
@@ -298,8 +301,8 @@ class SingleDispatchMeta(type):
     so that registered types on sub-classes do not modify the base class.
     """
     def __new__(mcs, clsname, bases, attributes):
-        _fixup_class_attributes(attributes, bases)
         cls = super(SingleDispatchMeta, mcs).__new__(mcs, clsname, bases, attributes)
+        _fixup_class_attributes(cls)
         return cls
 
 
@@ -317,9 +320,10 @@ class SingleDispatchABC(object):
 
 def register(name, cls):
     """ Decorator for methods on a sub-class to register an overload on a base-class generic method
-    name is the name of the generic method on the base class
-    cls is the type to register
+    :param name: is the name of the generic method on the base class, or the unbound method itself
+    :param cls: is the type to register
     """
+    name = getattr(name, '__name__', name)  # __name__ exists on sd_method courtesy of update_wrapper
     def wrapper(func):
         overloads = getattr(func, 'overloads', [])
         overloads.append((name, cls))

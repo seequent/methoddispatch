@@ -27,6 +27,15 @@ class SubClass(BaseClass):
     def foo_int(self, bar):
         return 'sub int'
 
+    @register(BaseClass.foo, str)
+    def foo_str(self, bar):
+        return 'str'
+
+class SubSubClass(SubClass):
+    @register('foo', list)
+    def foo_list(self, bar):
+        return 'list'
+
 
 @six.add_metaclass(abc.ABCMeta)
 class IFoo(object):
@@ -64,9 +73,18 @@ class TestMethodDispatch(unittest.TestCase):
 
     def test_sub_class(self):
         s = SubClass()
-        self.assertEqual(s.foo('text'), 'default')
+        self.assertEqual(s.foo([]), 'default')
         self.assertEqual(s.foo(1), 'sub int')
         self.assertEqual(s.foo(1.0), 'float')
+        self.assertEqual(s.foo(''), 'str')
+
+    def test_sub_sub_class(self):
+        # this checks that we are using MRO and not just bases.
+        s = SubSubClass()
+        self.assertEqual(s.foo([]), 'list')
+        self.assertEqual(s.foo(1), 'sub int')
+        self.assertEqual(s.foo(1.0), 'float')
+        self.assertEqual(s.foo(''), 'str')
 
     def test_independence(self):
         b = BaseClass()
@@ -100,7 +118,7 @@ class TestMethodDispatch(unittest.TestCase):
         self.assertTrue(hasattr(SubClass.foo, 'dispatch'))
         self.assertTrue(hasattr(SubClass.foo, 'registry'))
         self.assertIs(SubClass.foo.dispatch(float), SubClass.__dict__['foo_float'])
-        self.assertEqual(set(SubClass.foo.registry.keys()), set([float, object, int]))
+        self.assertEqual(set(SubClass.foo.registry.keys()), set([float, object, int, str]))
 
     def test_instance_extra_attributes(self):
         """ Check that dispatch and registry attributes are accessible """
@@ -108,7 +126,7 @@ class TestMethodDispatch(unittest.TestCase):
         self.assertTrue(hasattr(s.foo, 'dispatch'))
         self.assertTrue(hasattr(s.foo, 'registry'))
         self.assertIs(s.foo.dispatch(float), SubClass.__dict__['foo_float'])
-        self.assertEqual(set(s.foo.registry.keys()), set([float, object, int]))
+        self.assertEqual(set(s.foo.registry.keys()), set([float, object, int, str]))
 
     @unittest.skipIf(six.PY2, 'docs are in python3 syntax')
     def test_docs(self):
@@ -117,12 +135,12 @@ class TestMethodDispatch(unittest.TestCase):
         self.assertLessEqual(num_failures, 7)
         self.assertGreater(num_tests, 30)
 
-    @unittest.skipIf(sys.version_info < (3, 7), 'python < 3.7')
+    @unittest.skipIf(sys.version_info < (3, 6), 'python < 3.6')
     def test_annotations(self):
-        exec(py_37_tests)
+        exec(annotation_tests)
 
 
-py_37_tests = """
+annotation_tests = """
 def test_annotations(self):
     class AnnClass(BaseClass):
         @register('foo')
