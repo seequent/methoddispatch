@@ -14,7 +14,7 @@ setuptools.setup(
     keywords="single dispatch decorator method",
     url="https://github.com/seequent/methoddispatch",
     packages=setuptools.find_packages(),
-    long_description=methoddispatch.__doc__,
+    long_description=open('README.rst').read(),
     classifiers=[
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3.4",
