@@ -117,7 +117,7 @@ class TestMethodDispatch(unittest.TestCase):
         self.assertLessEqual(num_failures, 7)
         self.assertGreater(num_tests, 30)
 
-    @unittest.skipIf(sys.version_info < (3, 7), 'docs are in python3 syntax')
+    @unittest.skipIf(sys.version_info < (3, 7), 'python < 3.7')
     def test_annotations(self):
         exec(py_37_tests)
 
