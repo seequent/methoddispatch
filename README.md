@@ -1,6 +1,9 @@
 # methoddispatch
 
- [PEP 443](http://www.python.org/dev/peps/pep-0443) proposed to expose a mechanism in the ``functools`` standard library module in Python 3.4 that provides a simple form of generic programming known as single-dispatch generic functions.
+[![Build Status](https://travis-ci.com/seequent/methoddispatch.svg?branch=master)](https://travis-ci.com/seequent/methoddispatch)
+
+
+[PEP 443](http://www.python.org/dev/peps/pep-0443) proposed to expose a mechanism in the ``functools`` standard library module in Python 3.4 that provides a simple form of generic programming known as single-dispatch generic functions.
 
 This library extends this functionality to instance methods (and works for functions too)
 
