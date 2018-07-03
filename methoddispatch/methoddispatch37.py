@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from abc import get_cache_token, ABCMeta
-from functools import update_wrapper, _find_impl, _c3_mro
+from abc import get_cache_token
+from functools import update_wrapper, _find_impl
 from types import MappingProxyType
 from weakref import WeakKeyDictionary
 
-__all__ = ['singledispatch', 'register', 'SingleDispatchMeta', 'SingleDispatchABCMeta',
-           'SingleDispatch', 'SingleDispatchABC']
+__all__ = ['singledispatch', 'register', 'SingleDispatch', 'SingleDispatchABC']
 
 ################################################################################
 ### singledispatch() - single-dispatch generic function decorator
@@ -57,9 +56,26 @@ class singledispatch(object):
         """register(cls, func) -> func
 
         Registers a new implementation for the given *cls* on a *generic_func*.
+
         """
         if func is None:
-            return lambda f: self.register(cls, f)
+            if isinstance(cls, type):
+                return lambda f: self.register(cls, f)
+            ann = getattr(cls, '__annotations__', {})
+            if not ann:
+                raise TypeError(
+                    f"Invalid first argument to `register()`: {cls!r}. "
+                    f"Use either `@register(some_class)` or plain `@register` "
+                    f"on an annotated function."
+                )
+            func = cls
+
+            # only import typing if annotation parsing is necessary
+            from typing import get_type_hints
+            argname, cls = next(iter(get_type_hints(func).items()))
+            assert isinstance(cls, type), (
+                f"Invalid annotation for {argname!r}. {cls!r} is not a class."
+            )
         self._registry[cls] = func
         if self.cache_token is None and hasattr(cls, '__abstractmethods__'):
             self.cache_token = get_cache_token()
@@ -67,7 +83,7 @@ class singledispatch(object):
         return func
 
     def __get__(self, instance, cls=None):
-        if cls is not None and not isinstance(cls, SingleDispatchMeta):
+        if cls is not None and not issubclass(cls, SingleDispatch):
             raise ValueError('singledispatch can only be used on methods of SingleDispatchMeta types')
         wrapper = sd_method(self, instance)
         update_wrapper(wrapper, self.func)
@@ -108,61 +124,49 @@ class sd_method(object):
             return self.dispatch(args[0].__class__)(self._instance, *args, **kwargs)
 
 
-def _fixup_class_attributes(cls):
-    generics = []
-    attributes = cls.__dict__
-    for base in cls.mro()[1:]:
-        if isinstance(base, SingleDispatchMeta):
-            for name, value in base.__dict__.items():
-                if isinstance(value, singledispatch):
-                    if name in attributes:
-                        raise RuntimeError('Cannot override generic function.  '
-                                           'Try @register({}, object) instead.'.format(name))
-                    generic = value.copy()
-                    setattr(cls, name, generic)
-                    generics.append(generic)
-    for name, value in attributes.items():
-        if not callable(value) or isinstance(value, singledispatch):
-            continue
-        if hasattr(value, 'overloads'):
-            for generic_name, cls in value.overloads:
-                generic = attributes[generic_name]
-                generic.register(cls, value)
-        else:  # register over-ridden methods
-            for generic in generics:
-                for cls, f in generic.registry.items():
-                    if name == f.__name__:
-                        generic.register(cls, value)
-                        break
-
-
-class SingleDispatchMeta(type):
-    """Metaclass for objects with single dispatch methods.
-    The primary purpose is to copy the registry and dispatch lists
-    so that registered types on sub-classes do not modify the base class.
+class SingleDispatch(object):
     """
-    def __new__(mcs, clsname, bases, attributes):
-        cls = super(SingleDispatchMeta, mcs).__new__(mcs, clsname, bases, attributes)
-        _fixup_class_attributes(cls)
-        return cls
+    Base or mixin class to enable single dispatch on methods.
+    """
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        generics = []
+        attributes = cls.__dict__
+        for base in cls.mro()[1:]:
+            if issubclass(base, SingleDispatch):
+                for name, value in base.__dict__.items():
+                    if isinstance(value, singledispatch):
+                        if name in attributes:
+                            raise RuntimeError('Cannot override generic function.  '
+                                               'Try @register("{}", object) instead.'.format(name))
+                        generic = value.copy()
+                        setattr(cls, name, generic)
+                        generics.append(generic)
+        for name, value in attributes.items():
+            if not callable(value) or isinstance(value, singledispatch):
+                continue
+            if hasattr(value, 'overloads'):
+                for generic_name, cls in value.overloads:
+                    generic = attributes[generic_name]
+                    if cls is None:
+                        generic.register(value)
+                    else:
+                        generic.register(cls, value)
+            else:  # register over-ridden methods
+                for generic in generics:
+                    for cls, f in generic.registry.items():
+                        if name == f.__name__:
+                            generic.register(cls, value)
+                            break
 
 
-class SingleDispatchABCMeta(SingleDispatchMeta, ABCMeta):
-    pass
+SingleDispatchABC = SingleDispatch  # for backwards compatibility
 
 
-class SingleDispatch(metaclass=SingleDispatchMeta):
-    pass
-
-
-class SingleDispatchABC(metaclass=SingleDispatchABCMeta):
-    pass
-
-
-def register(name, cls):
-    """ Decorator for methods on a sub-class to register an overload on a base-class generic method
-    name is the name of the generic method on the base class
-    cls is the type to register
+def register(name, cls=None):
+    """ Decorator for methods on a sub-class to register an overload on a base-class generic method.
+    :param name: is the name of the generic method on the base class
+    :param cls: is the type to register or may be omitted or None to use the annotated parameter type.
     """
     def wrapper(func):
         overloads = getattr(func, 'overloads', [])
