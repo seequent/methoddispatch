@@ -146,7 +146,7 @@ Method overrides do not need to provide the ``register`` decorator again to be u
 However, providing the register decorator with the same type will also work.
 Decorating a method override with a different type (not a good idea) will register the different type and leave the base-class handler in place for the orginal type.
 
-In Python 3.7 and later, for functions annotated with types, the decorator will infer the type of the first argument automatically as shown below
+In Python 3.6 and later, for functions annotated with types, the decorator will infer the type of the first argument automatically as shown below
 
     >>> class BaseClassAnno(SingleDispatch):
     ...     @singledispatch
@@ -162,7 +162,7 @@ In Python 3.7 and later, for functions annotated with types, the decorator will 
     ...     def foo_float(self, bar: float):
     ...         return 'float'
 
-In Python 3.6 and earlier, the ``SingleDispatch`` class uses a meta-class ``SingleDispatchMeta`` to manage the dispatch registries.  However in Python 3.7 and later the ``__init_subclass__`` method is used instead.
+In Python 3.6 and earlier, the ``SingleDispatch`` class uses a meta-class ``SingleDispatchMeta`` to manage the dispatch registries.  However in Python 3.6 and later the ``__init_subclass__`` method is used instead.
 If your class also inherits from an ABC interface you can use the ``SingleDispatchABCMeta`` metaclass in Python 3.6 and earlier.
 
 Finally, accessing the method ``foo`` via a class will use the dispatch registry for that class
@@ -184,3 +184,8 @@ elif sys.version_info >= (3, 6):
 else:
     from .methoddispatch3 import *
     del methoddispatch3
+
+__version__ = '2.0.0'
+__author__ = 'Seequent'
+__license__ = 'BSD'
+__copyright__ = 'Copyright 2018 Seequent'
