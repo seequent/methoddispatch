@@ -2,12 +2,10 @@
 
 [![Build Status](https://travis-ci.com/seequent/methoddispatch.svg?branch=master)](https://travis-ci.com/seequent/methoddispatch)
 
+Python 3.4 added the ``singledispatch`` decorator to the ``functools`` standard library module.
+This library extends this functionality to instance methods (and works for functions too).
 
-[PEP 443](http://www.python.org/dev/peps/pep-0443) proposed to expose a mechanism in the ``functools`` standard library module in Python 3.4 that provides a simple form of generic programming known as single-dispatch generic functions.
-
-This library extends this functionality to instance methods (and works for functions too)
-
-To define a generic method , decorate it with the ``@singledispatch`` decorator. Note that the dispatch happens on the type of the first argument, create your function accordingly::
+To define a generic method , decorate it with the ``@singledispatch`` decorator. Note that the dispatch happens on the type of the first argument, create your function accordingly.
 
     >>> from methoddispatch import singledispatch, register, SingleDispatch
 
@@ -110,16 +108,20 @@ Decorating class methods requires the class to inherit from ``SingleDispatch``
     'int'
 
 Subclasses can extend the type registry of the function on the base class with their own overrides.
-Because the ``foo`` function is not in scope, the ``methoddispatch.register`` decorator must be used instead
+Because we do not want to modify the base class ``foo`` registry the ``methoddispatch.register`` decorator must be used instead of ``foo.register``.  The module level ``register`` function takes either the method name or the method itself as the first parameter and the dispatch type as the second.
 
     >>> class SubClass(BaseClass):
     ...     @register('foo', float)
     ...     def foo_float(self, bar):
     ...         return 'float'
     ...
+    ...     @register(BaseClass.foo, str)
+    ...     def foo_str(self, bar):
+    ...         return 'str'
+    ...
     >>> s = SubClass()
-    >>> s.foo(1)
-    'int'
+    >>> s.foo('')
+    'str'
     >>> s.foo(1.0)
     'float'
 
@@ -144,7 +146,7 @@ Decorating a method override with a different type (not a good idea) will regist
 
 In Python 3.7 and later, for functions annotated with types, the decorator will infer the type of the first argument automatically as shown below
 
-    >>> class BaseClass(SingleDispatch):
+    >>> class BaseClassAnno(SingleDispatch):
     ...     @singledispatch
     ...     def foo(self, bar):
     ...         return 'default'
@@ -153,13 +155,13 @@ In Python 3.7 and later, for functions annotated with types, the decorator will 
     ...     def foo_int(self, bar: int):
     ...         return 'int'
     ...
-    >>> class SubClass(BaseClass):
+    >>> class SubClassAnno(BaseClassAnno):
     ...     @register('foo')
     ...     def foo_float(self, bar: float):
     ...         return 'float'
 
 In Python 3.6 and earlier, the ``SingleDispatch`` class uses a meta-class ``SingleDispatchMeta`` to manage the dispatch registries.  However in Python 3.7 and later the ``__init_subclass__`` method is used instead.
-If your class also inhertits from an ABC interface you can use the ``SingleDispatchABCMeta`` metaclass in Python 3.6 and earlier.
+If your class also inherits from an ABC interface you can use the ``SingleDispatchABCMeta`` metaclass in Python 3.6 and earlier.
 
 Finally, accessing the method ``foo`` via a class will use the dispatch registry for that class
 

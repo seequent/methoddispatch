@@ -84,7 +84,7 @@ class singledispatch(object):
 
     def __get__(self, instance, cls=None):
         if cls is not None and not issubclass(cls, SingleDispatch):
-            raise ValueError('singledispatch can only be used on methods of SingleDispatchMeta types')
+            raise ValueError('singledispatch can only be used on methods of SingleDispatch subclasses')
         wrapper = sd_method(self, instance)
         update_wrapper(wrapper, self.func)
         return wrapper
@@ -124,40 +124,46 @@ class sd_method(object):
             return self.dispatch(args[0].__class__)(self._instance, *args, **kwargs)
 
 
+def _fixup_class_attributes(cls):
+    generics = []
+    attributes = cls.__dict__
+    patched = set()
+    for base in cls.mro()[1:]:
+        if issubclass(base, SingleDispatch):
+            for name, value in base.__dict__.items():
+                if isinstance(value, singledispatch) and name not in patched:
+                    if name in attributes:
+                        raise RuntimeError('Cannot override generic function.  '
+                                           'Try @register("{}", object) instead.'.format(name))
+                    generic = value.copy()
+                    setattr(cls, name, generic)
+                    patched.add(name)
+                    generics.append(generic)
+    for name, value in attributes.items():
+        if not callable(value) or isinstance(value, singledispatch):
+            continue
+        if hasattr(value, 'overloads'):
+            for generic_name, cls in value.overloads:
+                generic = attributes[generic_name]
+                if cls is None:
+                    generic.register(value)
+                else:
+                    generic.register(cls, value)
+        else:  # register over-ridden methods
+            for generic in generics:
+                for cls, f in generic.registry.items():
+                    if name == f.__name__:
+                        generic.register(cls, value)
+                        break
+
+
 class SingleDispatch(object):
     """
     Base or mixin class to enable single dispatch on methods.
     """
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
-        generics = []
-        attributes = cls.__dict__
-        for base in cls.mro()[1:]:
-            if issubclass(base, SingleDispatch):
-                for name, value in base.__dict__.items():
-                    if isinstance(value, singledispatch):
-                        if name in attributes:
-                            raise RuntimeError('Cannot override generic function.  '
-                                               'Try @register("{}", object) instead.'.format(name))
-                        generic = value.copy()
-                        setattr(cls, name, generic)
-                        generics.append(generic)
-        for name, value in attributes.items():
-            if not callable(value) or isinstance(value, singledispatch):
-                continue
-            if hasattr(value, 'overloads'):
-                for generic_name, cls in value.overloads:
-                    generic = attributes[generic_name]
-                    if cls is None:
-                        generic.register(value)
-                    else:
-                        generic.register(cls, value)
-            else:  # register over-ridden methods
-                for generic in generics:
-                    for cls, f in generic.registry.items():
-                        if name == f.__name__:
-                            generic.register(cls, value)
-                            break
+        _fixup_class_attributes(cls)
 
 
 SingleDispatchABC = SingleDispatch  # for backwards compatibility
@@ -165,9 +171,10 @@ SingleDispatchABC = SingleDispatch  # for backwards compatibility
 
 def register(name, cls=None):
     """ Decorator for methods on a sub-class to register an overload on a base-class generic method.
-    :param name: is the name of the generic method on the base class
+    :param name: is the name of the generic method on the base class, or the unbound method itself
     :param cls: is the type to register or may be omitted or None to use the annotated parameter type.
     """
+    name = getattr(name, '__name__', name)  # __name__ exists on sd_method courtesy of update_wrapper
     def wrapper(func):
         overloads = getattr(func, 'overloads', [])
         overloads.append((name, cls))
