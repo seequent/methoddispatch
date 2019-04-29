@@ -16,6 +16,190 @@ argument, create your function accordingly.
 
     >>> from methoddispatch import singledispatch, register, SingleDispatch
 
+            >>> @singledispatch
+            ... def fun(arg, verbose=False):
+            ...     if verbose:
+            ...         print("Let me just say,", end=" ")
+            ...     print(arg)
+
+        To add overloaded implementations to the function, use the
+
+            >>> @singledispatchmethod
+            ... def fun(arg, verbose=False):
+            ...     if verbose:
+            ...         print("Let me just say,", end=" ")
+            ...     print(arg)
+
+        To add overloaded implementations to the function, use the
+
+            >>> @singledispatchmethod
+            ... def fun(arg, verbose=False):
+            ...     if verbose:
+            ...         print("Let me just say,", end=" ")
+            ...     print(arg)
+
+        To add overloaded implementations to the function, use the
+
+        >>> @singledispatch
+        ... def fun(arg, verbose=False):
+        ...     if verbose:
+        ...         print("Let me just say,", end=" ")
+        ...     print(arg)
+
+    To add overloaded implementations to the function, use the
+
+            >>> @singledispatch
+            ... def fun(arg, verbose=False):
+            ...     if verbose:
+            ...         print("Let me just say,", end=" ")
+            ...     print(arg)
+
+        To add overloaded implementations to the function, use the
+
+            >>> @singledispatch
+            ... def fun(arg, verbose=False):
+            ...     if verbose:
+            ...         print("Let me just say,", end=" ")
+            ...     print(arg)
+
+        To add overloaded implementations to the function, use the
+
+            >>> @singledispatchmethod
+            ... def fun(arg, verbose=False):
+            ...     if verbose:
+            ...         print("Let me just say,", end=" ")
+            ...     print(arg)
+
+        To add overloaded implementations to the function, use the
+
+        >>> @singledispatch
+        ... def fun(arg, verbose=False):
+        ...     if verbose:
+        ...         print("Let me just say,", end=" ")
+        ...     print(arg)
+
+    To add overloaded implementations to the function, use the
+
+            >>> @singledispatch
+            ... def fun(arg, verbose=False):
+            ...     if verbose:
+            ...         print("Let me just say,", end=" ")
+            ...     print(arg)
+
+        To add overloaded implementations to the function, use the
+
+            >>> @singledispatch
+            ... def fun(arg, verbose=False):
+            ...     if verbose:
+            ...         print("Let me just say,", end=" ")
+            ...     print(arg)
+
+        To add overloaded implementations to the function, use the
+
+            >>> @singledispatchmethod
+            ... def fun(arg, verbose=False):
+            ...     if verbose:
+            ...         print("Let me just say,", end=" ")
+            ...     print(arg)
+
+        To add overloaded implementations to the function, use the
+
+        >>> @singledispatch
+        ... def fun(arg, verbose=False):
+        ...     if verbose:
+        ...         print("Let me just say,", end=" ")
+        ...     print(arg)
+
+    To add overloaded implementations to the function, use the
+
+            >>> @singledispatch
+            ... def fun(arg, verbose=False):
+            ...     if verbose:
+            ...         print("Let me just say,", end=" ")
+            ...     print(arg)
+
+        To add overloaded implementations to the function, use the
+
+            >>> @singledispatchmethod
+            ... def fun(arg, verbose=False):
+            ...     if verbose:
+            ...         print("Let me just say,", end=" ")
+            ...     print(arg)
+
+        To add overloaded implementations to the function, use the
+
+            >>> @singledispatch
+            ... def fun(arg, verbose=False):
+            ...     if verbose:
+            ...         print("Let me just say,", end=" ")
+            ...     print(arg)
+
+        To add overloaded implementations to the function, use the
+
+        >>> @singledispatch
+        ... def fun(arg, verbose=False):
+        ...     if verbose:
+        ...         print("Let me just say,", end=" ")
+        ...     print(arg)
+
+    To add overloaded implementations to the function, use the
+
+            >>> @singledispatch
+            ... def fun(arg, verbose=False):
+            ...     if verbose:
+            ...         print("Let me just say,", end=" ")
+            ...     print(arg)
+
+        To add overloaded implementations to the function, use the
+
+            >>> @singledispatchmethod
+            ... def fun(arg, verbose=False):
+            ...     if verbose:
+            ...         print("Let me just say,", end=" ")
+            ...     print(arg)
+
+        To add overloaded implementations to the function, use the
+
+            >>> @singledispatch
+            ... def fun(arg, verbose=False):
+            ...     if verbose:
+            ...         print("Let me just say,", end=" ")
+            ...     print(arg)
+
+        To add overloaded implementations to the function, use the
+
+        >>> @singledispatch
+        ... def fun(arg, verbose=False):
+        ...     if verbose:
+        ...         print("Let me just say,", end=" ")
+        ...     print(arg)
+
+    To add overloaded implementations to the function, use the
+
+        >>> @singledispatch
+        ... def fun(arg, verbose=False):
+        ...     if verbose:
+        ...         print("Let me just say,", end=" ")
+        ...     print(arg)
+
+    To add overloaded implementations to the function, use the
+
+        >>> @singledispatchmethod
+        ... def fun(arg, verbose=False):
+        ...     if verbose:
+        ...         print("Let me just say,", end=" ")
+        ...     print(arg)
+
+    To add overloaded implementations to the function, use the
+
+        >>> @singledispatchmethod
+        ... def fun(arg, verbose=False):
+        ...     if verbose:
+        ...         print("Let me just say,", end=" ")
+        ...     print(arg)
+
+    To add overloaded implementations to the function, use the
+
     >>> @singledispatch
     ... def fun(arg, verbose=False):
     ...     if verbose:

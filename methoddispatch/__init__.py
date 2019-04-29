@@ -110,14 +110,15 @@ Decorating class methods requires the class to inherit from ``SingleDispatch``
     'int'
 
 Subclasses can extend the type registry of the function on the base class with their own overrides.
-Because we do not want to modify the base class ``foo`` registry the ``methoddispatch.register`` decorator must be used instead of ``foo.register``.  The module level ``register`` function takes either the method name or the method itself as the first parameter and the dispatch type as the second.
+Because we do not want to modify the base class ``foo`` registry the ``foo.overload`` decorator must be used
+instead of ``foo.register``.
 
     >>> class SubClass(BaseClass):
-    ...     @register('foo', float)
+    ...     @BaseClass.foo.overload(float)
     ...     def foo_float(self, bar):
     ...         return 'float'
     ...
-    ...     @register(BaseClass.foo, str)
+    ...     @BaseClass.foo.overload(str)
     ...     def foo_str(self, bar):
     ...         return 'str'
     ...
@@ -158,7 +159,7 @@ In Python 3.6 and later, for functions annotated with types, the decorator will 
     ...         return 'int'
     ...
     >>> class SubClassAnno(BaseClassAnno):
-    ...     @register('foo')
+    ...     @BaseClassAnno.foo.overload
     ...     def foo_float(self, bar: float):
     ...         return 'float'
 

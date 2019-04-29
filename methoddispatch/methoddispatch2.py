@@ -319,7 +319,7 @@ class SingleDispatchABC(object):
 
 
 def register(name, cls):
-    """ Decorator for methods on a sub-class to register an overload on a base-class generic method
+    """ Decorator for methods on a sub-class to register an register on a base-class generic method
     :param name: is the name of the generic method on the base class, or the unbound method itself
     :param cls: is the type to register
     """

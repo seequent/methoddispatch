@@ -2,7 +2,7 @@
 import unittest
 
 import methoddispatch
-from methoddispatch import singledispatch, register, SingleDispatch, SingleDispatchABC
+from methoddispatch import singledispatch, SingleDispatch, SingleDispatchABC
 import abc
 import doctest
 import six
@@ -18,23 +18,32 @@ class BaseClass(SingleDispatch):
     def foo_int(self, bar):
         return 'int'
 
+    @foo.overload(set)
+    def foo_set(self, bar):
+        return 'set'
+
 
 class SubClass(BaseClass):
-    @register('foo', float)
+    @BaseClass.foo.overload(float)
     def foo_float(self, bar):
         return 'float'
 
     def foo_int(self, bar):
         return 'sub int'
 
-    @register(BaseClass.foo, str)
+    @BaseClass.foo.overload(str)
     def foo_str(self, bar):
         return 'str'
 
+
 class SubSubClass(SubClass):
-    @register('foo', list)
+    @SubClass.foo.overload(list)
     def foo_list(self, bar):
         return 'list'
+
+    @methoddispatch.register('foo', tuple)
+    def foo_tuple(self, bar):
+        return 'tuple'
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -44,7 +53,7 @@ class IFoo(object):
         pass
 
 
-class MyClass(IFoo, SingleDispatchABC):
+class MyClass(SingleDispatchABC, IFoo):
     @singledispatch
     def foo(self, bar):
         return 'my default'
@@ -53,15 +62,9 @@ class MyClass(IFoo, SingleDispatchABC):
     def foo_int(self, bar):
         return 'my int'
 
-
-@singledispatch
-def func(a):
-    return 'default'
-
-
-@func.register(bool)
-def func_bool(a):
-    return not a
+    @foo.register(list)
+    def foo_list(self, bar):
+        return 'my list'
 
 
 class TestMethodDispatch(unittest.TestCase):
@@ -69,6 +72,7 @@ class TestMethodDispatch(unittest.TestCase):
         b = BaseClass()
         self.assertEqual(b.foo('text'), 'default')
         self.assertEqual(b.foo(1), 'int')
+        self.assertEqual(b.foo(set()), 'set')
         self.assertEqual(b.foo(1.0), 'default')
 
     def test_sub_class(self):
@@ -100,13 +104,9 @@ class TestMethodDispatch(unittest.TestCase):
 
     def test_abc_interface_support(self):
         m = MyClass()
-        self.assertEqual(m.foo('text'), 'my default')
-        self.assertEqual(m.foo(1), 'my int')
-
-    def test_pure_funcs(self):
-        self.assertEqual('default', func(self))
-        self.assertEqual(False, func(True))
-        self.assertEqual(True, func(False))
+        self.assertEqual('my default', m.foo('text'))
+        self.assertEqual('my int', m.foo(1))
+        self.assertEqual('my list', m.foo([]))
 
     def test_class_access(self):
         s = SubClass()
@@ -118,7 +118,7 @@ class TestMethodDispatch(unittest.TestCase):
         self.assertTrue(hasattr(SubClass.foo, 'dispatch'))
         self.assertTrue(hasattr(SubClass.foo, 'registry'))
         self.assertIs(SubClass.foo.dispatch(float), SubClass.__dict__['foo_float'])
-        self.assertEqual(set(SubClass.foo.registry.keys()), set([float, object, int, str]))
+        self.assertEqual(set(SubClass.foo.registry.keys()), set([float, object, set, int, str]))
 
     def test_instance_extra_attributes(self):
         """ Check that dispatch and registry attributes are accessible """
@@ -126,7 +126,7 @@ class TestMethodDispatch(unittest.TestCase):
         self.assertTrue(hasattr(s.foo, 'dispatch'))
         self.assertTrue(hasattr(s.foo, 'registry'))
         self.assertIs(s.foo.dispatch(float), SubClass.__dict__['foo_float'])
-        self.assertEqual(set(s.foo.registry.keys()), set([float, object, int, str]))
+        self.assertEqual(set(s.foo.registry.keys()), set([float, object, set, int, str]))
 
     @unittest.skipIf(six.PY2, 'docs are in python3 syntax')
     def test_docs(self):
@@ -143,12 +143,12 @@ class TestMethodDispatch(unittest.TestCase):
 annotation_tests = """
 def test_annotations(self):
     class AnnClass(BaseClass):
-        @register('foo')
+        @BaseClass.foo.overload
         def foo_int(self, bar: int):
-            return 'ann int'
+            return 'an int'
 
     c = AnnClass()
-    self.assertEqual(c.foo(1), 'ann int')
+    self.assertEqual(c.foo(1), 'an int')
 
 test_annotations(self)
 """

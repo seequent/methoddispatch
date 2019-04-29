@@ -4,8 +4,10 @@ from abc import get_cache_token
 from functools import update_wrapper, _find_impl
 from types import MappingProxyType
 from weakref import WeakKeyDictionary
+import warnings
 
 __all__ = ['singledispatch', 'register', 'SingleDispatch', 'SingleDispatchABC']
+
 
 ################################################################################
 ### singledispatch() - single-dispatch generic function decorator
@@ -61,21 +63,8 @@ class singledispatch(object):
         if func is None:
             if isinstance(cls, type):
                 return lambda f: self.register(cls, f)
-            ann = getattr(cls, '__annotations__', {})
-            if not ann:
-                raise TypeError(
-                    f"Invalid first argument to `register()`: {cls!r}. "
-                    f"Use either `@register(some_class)` or plain `@register` "
-                    f"on an annotated function."
-                )
             func = cls
-
-            # only import typing if annotation parsing is necessary
-            from typing import get_type_hints
-            argname, cls = next(iter(get_type_hints(func).items()))
-            assert isinstance(cls, type), (
-                f"Invalid annotation for {argname!r}. {cls!r} is not a class."
-            )
+            cls = _get_class_from_annotation(cls)
         self._registry[cls] = func
         if self.cache_token is None and hasattr(cls, '__abstractmethods__'):
             self.cache_token = get_cache_token()
@@ -103,6 +92,38 @@ class singledispatch(object):
     def get_registered_types(self):
         return [type_ for type_ in self._registry.keys() if type_ is not object]
 
+    def overload(self, cls, func=None):
+        """ Decorator for methods on a sub-class to register an overload on a base-class generic method.
+        :param cls: is the type to register or may be omitted or None to use the annotated parameter type.
+        """
+        if func is None:
+            if isinstance(cls, type):
+                return lambda f: self.overload(cls, f)
+            func = cls
+            cls = _get_class_from_annotation(cls)
+
+        overloads = getattr(func, '_overloads', [])
+        overloads.append((self.__name__, cls))
+        func._overloads = overloads
+        return func
+
+
+def _get_class_from_annotation(func):
+    ann = getattr(func, '__annotations__', {})
+    if not ann:
+        raise TypeError(
+            f"Invalid first argument to `register()`: {func!r}. "
+            f"Use either `@register(some_class)` or plain `@register` "
+            f"on an annotated function."
+        )
+    # only import typing if annotation parsing is necessary
+    from typing import get_type_hints
+    argname, cls = next(iter(get_type_hints(func).items()))
+    assert isinstance(cls, type), (
+        f"Invalid annotation for {argname!r}. {cls!r} is not a class."
+    )
+    return cls
+
 
 class sd_method(object):
     """ A singledispatch method """
@@ -123,13 +144,16 @@ class sd_method(object):
         else:
             return self.dispatch(args[0].__class__)(self._instance, *args, **kwargs)
 
+    def overload(self, cls, func=None):
+        return self._s_d.overload(cls, func)
+
 
 def _fixup_class_attributes(cls):
     generics = []
     attributes = cls.__dict__
     patched = set()
     for base in cls.mro()[1:]:
-        if issubclass(base, SingleDispatch):
+        if issubclass(base, SingleDispatch) and base is not SingleDispatch:
             for name, value in base.__dict__.items():
                 if isinstance(value, singledispatch) and name not in patched:
                     if name in attributes:
@@ -142,8 +166,8 @@ def _fixup_class_attributes(cls):
     for name, value in attributes.items():
         if not callable(value) or isinstance(value, singledispatch):
             continue
-        if hasattr(value, 'overloads'):
-            for generic_name, cls in value.overloads:
+        if hasattr(value, '_overloads'):
+            for generic_name, cls in value._overloads:
                 generic = attributes[generic_name]
                 if cls is None:
                     generic.register(value)
@@ -174,10 +198,11 @@ def register(name, cls=None):
     :param name: is the name of the generic method on the base class, or the unbound method itself
     :param cls: is the type to register or may be omitted or None to use the annotated parameter type.
     """
+    warnings.warn('Use @BaseClass.method.overload() instead of register', DeprecationWarning, stacklevel=2)
     name = getattr(name, '__name__', name)  # __name__ exists on sd_method courtesy of update_wrapper
     def wrapper(func):
-        overloads = getattr(func, 'overloads', [])
+        overloads = getattr(func, '_overloads', [])
         overloads.append((name, cls))
-        func.overloads = overloads
+        func._overloads = overloads
         return func
     return wrapper
