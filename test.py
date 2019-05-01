@@ -9,35 +9,47 @@ import six
 import sys
 
 
+def instance_foo(self, bar):
+    return 'instance'
+
+
 class BaseClass(SingleDispatch):
     @singledispatch
     def foo(self, bar):
         return 'default'
 
-    @foo.register(int)
+    @foo.add_overload(int)
     def foo_int(self, bar):
         return 'int'
 
-    @foo.overload(set)
+    @foo.register(set)
     def foo_set(self, bar):
         return 'set'
 
+    @singledispatch
+    def bar(self, bar):
+        return 'default'
+
+    @bar.register(int)
+    def bar_int(self, bar):
+        return 'int'
+
 
 class SubClass(BaseClass):
-    @BaseClass.foo.overload(float)
+    @BaseClass.foo.register(float)
     def foo_float(self, bar):
         return 'float'
 
     def foo_int(self, bar):
         return 'sub int'
 
-    @BaseClass.foo.overload(str)
+    @BaseClass.foo.register(str)
     def foo_str(self, bar):
         return 'str'
 
 
 class SubSubClass(SubClass):
-    @SubClass.foo.overload(list)
+    @SubClass.foo.register(list)
     def foo_list(self, bar):
         return 'list'
 
@@ -74,6 +86,8 @@ class TestMethodDispatch(unittest.TestCase):
         self.assertEqual(b.foo(1), 'int')
         self.assertEqual(b.foo(set()), 'set')
         self.assertEqual(b.foo(1.0), 'default')
+        self.assertEqual(b.bar(1.0), 'default')
+        self.assertEqual(b.bar(1), 'int')
 
     def test_sub_class(self):
         s = SubClass()
@@ -95,6 +109,14 @@ class TestMethodDispatch(unittest.TestCase):
         s = SubClass()
         self.assertEqual(b.foo(1.0), 'default')
         self.assertEqual(s.foo(1.0), 'float')
+
+    def test_instance_register(self):
+        b = BaseClass()
+        b2 = BaseClass()
+        b.foo.register(float, instance_foo)
+        self.assertEqual(BaseClass.foo(b, 1.0), 'default')
+        self.assertEqual(b.foo(1.0), 'instance')
+        self.assertEqual(b2.foo(1.0), 'default')
 
     def test_attempted_override(self):
         with self.assertRaises(RuntimeError):
@@ -132,8 +154,8 @@ class TestMethodDispatch(unittest.TestCase):
     def test_docs(self):
         num_failures, num_tests = doctest.testmod(methoddispatch, name='methoddispatch')
         # we expect 6 failures as a result like <function fun_num at 0x1035a2840> is not deterministic
-        self.assertLessEqual(num_failures, 7)
-        self.assertGreater(num_tests, 30)
+        self.assertLessEqual(num_failures, 6)
+        self.assertGreaterEqual(num_tests, 40)
 
     @unittest.skipIf(sys.version_info < (3, 6), 'python < 3.6')
     def test_annotations(self):
@@ -143,12 +165,18 @@ class TestMethodDispatch(unittest.TestCase):
 annotation_tests = """
 def test_annotations(self):
     class AnnClass(BaseClass):
-        @BaseClass.foo.overload
+        @BaseClass.foo.register
         def foo_int(self, bar: int):
             return 'an int'
 
     c = AnnClass()
     self.assertEqual(c.foo(1), 'an int')
 
+    def foo_float(obj: AnnClass, bar: float):
+        return 'float'
+
+    c.foo.register(foo_float)
+    self.assertEqual(c.foo(1.23), 'float')
+ 
 test_annotations(self)
 """
