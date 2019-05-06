@@ -375,11 +375,11 @@ shown below::
     ...     def foo_float(self, bar: float):
     ...         return 'float'
 
-In Python 3.6 and earlier, the ``SingleDispatch`` class uses a
+In Python 3.5 and earlier, the ``SingleDispatch`` class uses a
 meta-class ``SingleDispatchMeta`` to manage the dispatch registries.
 However in Python 3.6 and later the ``__init_subclass__`` method is used
 instead. If your class also inherits from an ABC interface you can use
-the ``SingleDispatchABCMeta`` metaclass in Python 3.6 and earlier.
+the ``SingleDispatchABCMeta`` metaclass in Python 3.5 and earlier.
 
 Finally, accessing the method ``foo`` via a class will use the dispatch
 registry for that class::
