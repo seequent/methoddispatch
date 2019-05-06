@@ -8,7 +8,8 @@ Python 3.4 added the ``singledispatch`` decorator to the ``functools`` standard 
 This library adds this functionality to instance methods.
 
 To define a generic method , decorate it with the ``@singledispatch`` decorator. Note that the dispatch happens on the type of the first argument, create your function accordingly.
-To add overloaded implementations to the function, use the ``register()`` attribute of the generic function. It is a decorator, taking a type parameter and decorating a function implementing the operation for that type
+To add overloaded implementations to the function, use the ``register()`` attribute of the generic function.
+It is a decorator, taking a type parameter and decorating a function implementing the operation for that type.
 The ``register()`` attribute returns the undecorated function which enables decorator stacking, pickling, as well as creating unit tests for each variant independently
 
     >>> from methoddispatch import singledispatch, register, SingleDispatch
@@ -172,8 +173,8 @@ In Python 3.6 and later, for functions annotated with types, the decorator will 
     ...     def foo_float(self, bar: float):
     ...         return 'float'
 
-In Python 3.6 and earlier, the ``SingleDispatch`` class uses a meta-class ``SingleDispatchMeta`` to manage the dispatch registries.  However in Python 3.6 and later the ``__init_subclass__`` method is used instead.
-If your class also inherits from an ABC interface you can use the ``SingleDispatchABCMeta`` metaclass in Python 3.6 and earlier.
+In Python 3.5 and earlier, the ``SingleDispatch`` class uses a meta-class ``SingleDispatchMeta`` to manage the dispatch registries.  However in Python 3.6 and later the ``__init_subclass__`` method is used instead.
+If your class also inherits from an ABC interface you can use the ``SingleDispatchABCMeta`` metaclass in Python 3.5 and earlier.
 
 Finally, accessing the method ``foo`` via a class will use the dispatch registry for that class
 
