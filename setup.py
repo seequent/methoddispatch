@@ -9,7 +9,7 @@ setuptools.setup(
     version=methoddispatch.__version__,
     author=methoddispatch.__author__,
     author_email="tim.mitchell@seequent.com",
-    description="singledispatch decorator for functions and methods.",
+    description="singledispatch decorator for class methods.",
     license=methoddispatch.__license__,
     keywords="single dispatch decorator method",
     url="https://github.com/seequent/methoddispatch",
