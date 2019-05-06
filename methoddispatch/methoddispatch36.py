@@ -6,7 +6,7 @@ from types import MappingProxyType
 from weakref import WeakKeyDictionary
 import warnings
 
-__all__ = ['singledispatch', 'register', 'SingleDispatch', 'SingleDispatchABC']
+__all__ = ['singledispatch', 'register', 'SingleDispatch']
 
 
 ################################################################################

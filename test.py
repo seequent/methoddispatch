@@ -2,7 +2,12 @@
 import unittest
 
 import methoddispatch
-from methoddispatch import singledispatch, SingleDispatch, SingleDispatchABC
+from methoddispatch import singledispatch, SingleDispatch
+try:
+    from methoddispatch import SingleDispatchABC
+except ImportError:
+    SingleDispatchABC = SingleDispatch
+
 import abc
 import doctest
 import six
