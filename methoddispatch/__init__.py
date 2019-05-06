@@ -196,7 +196,7 @@ else:
     from .methoddispatch3 import *
     del methoddispatch3
 
-__version__ = '3.0.0'
+__version__ = '3.0.1'
 __author__ = 'Seequent'
 __license__ = 'BSD'
 __copyright__ = 'Copyright 2019 Seequent'
