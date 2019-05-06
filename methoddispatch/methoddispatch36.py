@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from abc import get_cache_token, ABC, abstractmethod
+from abc import get_cache_token
 from functools import update_wrapper, _find_impl
 from types import MappingProxyType
 from weakref import WeakKeyDictionary
@@ -13,34 +13,8 @@ __all__ = ['singledispatch', 'register', 'SingleDispatch', 'SingleDispatchABC']
 ### singledispatch() - single-dispatch generic function decorator
 ################################################################################
 
-class ISingleDispatch(ABC):
-    @abstractmethod
-    def dispatch(self, cls):
-        pass
 
-    @abstractmethod
-    def copy(self):
-        pass
-
-    @abstractmethod
-    def get_registered_types(self):
-        pass
-
-    @property
-    @abstractmethod
-    def registry(self):
-        pass
-
-    @abstractmethod
-    def register(self, cls, func=None):
-        pass
-
-    @abstractmethod
-    def __call__(self, *args, **kwargs):
-        pass
-
-
-class singledispatch(ISingleDispatch):
+class singledispatch:
     """Single-dispatch generic function decorator.
 
     Transforms a function into a generic function, which can have different
@@ -55,11 +29,8 @@ class singledispatch(ISingleDispatch):
         self.func = func
         self.cache_token = None
         self._registry[object] = func
+        self.registry = MappingProxyType(self._registry)
         update_wrapper(self, func)
-
-    @property
-    def registry(self):
-        return MappingProxyType(self._registry)
 
     def dispatch(self, cls):
         """dispatch(cls) -> <function implementation>
@@ -161,13 +132,13 @@ def _get_class_from_annotation(func):
     return cls
 
 
-class BoundSDMethod(ISingleDispatch):
-    """ A singledispatch method (bound or unbound) """
+class BoundSDMethod:
+    """ A bound singledispatch method """
 
-    def __init__(self, s_d: ISingleDispatch, instance):
+    def __init__(self, s_d, instance):
         self._instance = instance
         self._s_d = s_d
-        self._instance_sd: ISingleDispatch = instance.__dict__.get('__' + s_d.__name__, None)
+        self._instance_sd = instance.__dict__.get('__' + s_d.__name__, None)
 
     def copy(self):
         if self._instance_sd is not None:
@@ -203,8 +174,8 @@ class BoundSDMethod(ISingleDispatch):
             return self._s_d.get_registered_types()
 
 
-class UnboundSDMethod(ISingleDispatch):
-    """ A singledispatch method unbound """
+class UnboundSDMethod:
+    """ An unbound singledispatch method """
 
     def __init__(self, s_d):
         self._s_d = s_d
@@ -242,7 +213,7 @@ def _fixup_class_attributes(cls):
                 if isinstance(value, singledispatch) and name not in patched:
                     if name in attributes:
                         raise RuntimeError('Cannot override generic function.  '
-                                           'Try @name.register(object) instead.')
+                                           'Try @{name}.register(object) instead.'.format(name=name))
                     generic = value.copy()
                     setattr(cls, name, generic)
                     patched.add(name)
@@ -265,16 +236,13 @@ def _fixup_class_attributes(cls):
                         break
 
 
-class SingleDispatch(object):
+class SingleDispatch:
     """
     Base or mixin class to enable single dispatch on methods.
     """
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
         _fixup_class_attributes(cls)
-
-
-SingleDispatchABC = SingleDispatch  # for backwards compatibility
 
 
 def register(name, cls=None):
