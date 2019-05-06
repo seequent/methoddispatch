@@ -160,7 +160,7 @@ class TestMethodDispatch(unittest.TestCase):
         num_failures, num_tests = doctest.testmod(methoddispatch, name='methoddispatch')
         # we expect 6 failures as a result like <function fun_num at 0x1035a2840> is not deterministic
         self.assertLessEqual(num_failures, 6)
-        self.assertGreaterEqual(num_tests, 40)
+        self.assertGreaterEqual(num_tests, 30)
 
     @unittest.skipIf(sys.version_info < (3, 6), 'python < 3.6')
     def test_annotations(self):
