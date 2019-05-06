@@ -4,298 +4,97 @@ methoddispatch
 |Build Status|
 
 
-Python 3.4 added the ``singledispatch`` decorator to the ``functools``
-standard library module. This library extends this functionality to
-instance methods (and works for functions too).
+Python 3.4 added the ``singledispatch`` decorator to the ``functools`` standard library module.
+This library adds this functionality to instance methods.
 
-To define a generic method , decorate it with the ``@singledispatch``
-decorator. Note that the dispatch happens on the type of the first
-argument, create your function accordingly.
+**Deprecation Warning**
+``methoddispatch`` 2 and earlier worked on standard functions too, and could be used in place of ``functools.singledispatch``.
+Version 3 no longer supports this functionality as it breaks the Zen of Python "There should be only one way to do something".
+Doing this also paved the way to support a better API and deprecate the ``methoddispatch.register`` function.
 
-::
+
+To define a generic method , decorate it with the ``@singledispatch`` decorator. Note that the dispatch happens on the type of the first argument, create your function accordingly.
+To add overloaded implementations to the function, use the ``register()`` attribute of the generic function. It is a decorator, taking a type parameter and decorating a function implementing the operation for that type.
+The ``register()`` attribute returns the undecorated function which enables decorator stacking, pickling, as well as creating unit tests for each variant independently
 
     >>> from methoddispatch import singledispatch, register, SingleDispatch
-
-            >>> @singledispatch
-            ... def fun(arg, verbose=False):
-            ...     if verbose:
-            ...         print("Let me just say,", end=" ")
-            ...     print(arg)
-
-        To add overloaded implementations to the function, use the
-
-            >>> @singledispatchmethod
-            ... def fun(arg, verbose=False):
-            ...     if verbose:
-            ...         print("Let me just say,", end=" ")
-            ...     print(arg)
-
-        To add overloaded implementations to the function, use the
-
-            >>> @singledispatchmethod
-            ... def fun(arg, verbose=False):
-            ...     if verbose:
-            ...         print("Let me just say,", end=" ")
-            ...     print(arg)
-
-        To add overloaded implementations to the function, use the
-
-        >>> @singledispatch
-        ... def fun(arg, verbose=False):
-        ...     if verbose:
-        ...         print("Let me just say,", end=" ")
-        ...     print(arg)
-
-    To add overloaded implementations to the function, use the
-
-            >>> @singledispatch
-            ... def fun(arg, verbose=False):
-            ...     if verbose:
-            ...         print("Let me just say,", end=" ")
-            ...     print(arg)
-
-        To add overloaded implementations to the function, use the
-
-            >>> @singledispatch
-            ... def fun(arg, verbose=False):
-            ...     if verbose:
-            ...         print("Let me just say,", end=" ")
-            ...     print(arg)
-
-        To add overloaded implementations to the function, use the
-
-            >>> @singledispatchmethod
-            ... def fun(arg, verbose=False):
-            ...     if verbose:
-            ...         print("Let me just say,", end=" ")
-            ...     print(arg)
-
-        To add overloaded implementations to the function, use the
-
-        >>> @singledispatch
-        ... def fun(arg, verbose=False):
-        ...     if verbose:
-        ...         print("Let me just say,", end=" ")
-        ...     print(arg)
-
-    To add overloaded implementations to the function, use the
-
-            >>> @singledispatch
-            ... def fun(arg, verbose=False):
-            ...     if verbose:
-            ...         print("Let me just say,", end=" ")
-            ...     print(arg)
-
-        To add overloaded implementations to the function, use the
-
-            >>> @singledispatch
-            ... def fun(arg, verbose=False):
-            ...     if verbose:
-            ...         print("Let me just say,", end=" ")
-            ...     print(arg)
-
-        To add overloaded implementations to the function, use the
-
-            >>> @singledispatchmethod
-            ... def fun(arg, verbose=False):
-            ...     if verbose:
-            ...         print("Let me just say,", end=" ")
-            ...     print(arg)
-
-        To add overloaded implementations to the function, use the
-
-        >>> @singledispatch
-        ... def fun(arg, verbose=False):
-        ...     if verbose:
-        ...         print("Let me just say,", end=" ")
-        ...     print(arg)
-
-    To add overloaded implementations to the function, use the
-
-            >>> @singledispatch
-            ... def fun(arg, verbose=False):
-            ...     if verbose:
-            ...         print("Let me just say,", end=" ")
-            ...     print(arg)
-
-        To add overloaded implementations to the function, use the
-
-            >>> @singledispatchmethod
-            ... def fun(arg, verbose=False):
-            ...     if verbose:
-            ...         print("Let me just say,", end=" ")
-            ...     print(arg)
-
-        To add overloaded implementations to the function, use the
-
-            >>> @singledispatch
-            ... def fun(arg, verbose=False):
-            ...     if verbose:
-            ...         print("Let me just say,", end=" ")
-            ...     print(arg)
-
-        To add overloaded implementations to the function, use the
-
-        >>> @singledispatch
-        ... def fun(arg, verbose=False):
-        ...     if verbose:
-        ...         print("Let me just say,", end=" ")
-        ...     print(arg)
-
-    To add overloaded implementations to the function, use the
-
-            >>> @singledispatch
-            ... def fun(arg, verbose=False):
-            ...     if verbose:
-            ...         print("Let me just say,", end=" ")
-            ...     print(arg)
-
-        To add overloaded implementations to the function, use the
-
-            >>> @singledispatchmethod
-            ... def fun(arg, verbose=False):
-            ...     if verbose:
-            ...         print("Let me just say,", end=" ")
-            ...     print(arg)
-
-        To add overloaded implementations to the function, use the
-
-            >>> @singledispatch
-            ... def fun(arg, verbose=False):
-            ...     if verbose:
-            ...         print("Let me just say,", end=" ")
-            ...     print(arg)
-
-        To add overloaded implementations to the function, use the
-
-        >>> @singledispatch
-        ... def fun(arg, verbose=False):
-        ...     if verbose:
-        ...         print("Let me just say,", end=" ")
-        ...     print(arg)
-
-    To add overloaded implementations to the function, use the
-
-        >>> @singledispatch
-        ... def fun(arg, verbose=False):
-        ...     if verbose:
-        ...         print("Let me just say,", end=" ")
-        ...     print(arg)
-
-    To add overloaded implementations to the function, use the
-
-        >>> @singledispatchmethod
-        ... def fun(arg, verbose=False):
-        ...     if verbose:
-        ...         print("Let me just say,", end=" ")
-        ...     print(arg)
-
-    To add overloaded implementations to the function, use the
-
-        >>> @singledispatchmethod
-        ... def fun(arg, verbose=False):
-        ...     if verbose:
-        ...         print("Let me just say,", end=" ")
-        ...     print(arg)
-
-    To add overloaded implementations to the function, use the
-
-    >>> @singledispatch
-    ... def fun(arg, verbose=False):
-    ...     if verbose:
-    ...         print("Let me just say,", end=" ")
-    ...     print(arg)
-
-To add overloaded implementations to the function, use the
-``register()`` attribute of the generic function. It is a decorator,
-taking a type parameter and decorating a function implementing the
-operation for that type::
-
-    >>> @fun.register(int)
-    ... def _(arg, verbose=False):
-    ...     if verbose:
-    ...         print("Strength in numbers, eh?", end=" ")
-    ...     print(arg)
-    ...
-    >>> @fun.register(list)
-    ... def _(arg, verbose=False):
-    ...     if verbose:
-    ...         print("Enumerate this:")
-    ...     for i, elem in enumerate(arg):
-    ...         print(i, elem)
-
-To enable registering lambdas and pre-existing functions, the
-``register()`` attribute can be used in a functional form::
-
-    >>> def nothing(arg, verbose=False):
-    ...     print("Nothing.")
-    ...
-    >>> fun.register(type(None), nothing)
-    <function nothing at 0x03D3FDB0>
-
-The ``register()`` attribute returns the undecorated function which
-enables decorator stacking, pickling, as well as creating unit tests for
-each variant independently::
-
     >>> from decimal import Decimal
-    >>> @fun.register(float)
-    ... @fun.register(Decimal)
-    ... def fun_num(arg, verbose=False):
-    ...     if verbose:
-    ...         print("Half of your number:", end=" ")
-    ...     print(arg / 2)
+    >>> class MyClass(SingleDispatch):
+    ...     @singledispatch
+    ...     def fun(self, arg, verbose=False):
+    ...         if verbose:
+    ...             print("Let me just say,", end=" ")
+    ...         print(arg)
     ...
-    >>> fun_num is fun
-    False
+    ...     @fun.register(int)
+    ...     def fun_int(self, arg, verbose=False):
+    ...         if verbose:
+    ...             print("Strength in numbers, eh?", end=" ")
+    ...         print(arg)
+    ...
+    ...     @fun.register(list)
+    ...     def fun_list(self, arg, verbose=False):
+    ...         if verbose:
+    ...             print("Enumerate this:")
+    ...         for i, elem in enumerate(arg):
+    ...             print(i, elem)
+    ...
+    ...     @fun.register(float)
+    ...     @fun.register(Decimal)
+    ...     def fun_num(obj, arg, verbose=False):
+    ...         if verbose:
+    ...             print("Half of your number:", end=" ")
+    ...         print(arg / 2)
 
-When called, the generic function dispatches on the type of the first
-argument::
+The ``register()`` attribute only works inside a class statement, relying on ``SingleDispatch.__init_subclass__``
+to create the actual dispatch table.  This also means that (unlike functools.singledispatch) two methods
+with the same name cannot be registered as only the last one will be in the class dictionary.
 
-    >>> fun("Hello, world.")
+Functions not defined in the class can be registered using the ``add_overload`` attribute.
+
+    >>> def nothing(obj, arg, verbose=False):
+    ...    print('Nothing.')
+    >>> MyClass.fun.add_overload(type(None), nothing)
+
+When called, the generic function dispatches on the type of the first argument::
+
+    >>> a = MyClass()
+    >>> a.fun("Hello, world.")
     Hello, world.
-    >>> fun("test.", verbose=True)
+    >>> a.fun("test.", verbose=True)
     Let me just say, test.
-    >>> fun(42, verbose=True)
+    >>> a.fun(42, verbose=True)
     Strength in numbers, eh? 42
-    >>> fun(['spam', 'spam', 'eggs', 'spam'], verbose=True)
+    >>> a.fun(['spam', 'spam', 'eggs', 'spam'], verbose=True)
     Enumerate this:
     0 spam
     1 spam
     2 eggs
     3 spam
-    >>> fun(None)
+    >>> a.fun(None)
     Nothing.
-    >>> fun(1.23)
+    >>> a.fun(1.23)
     0.615
 
-Where there is no registered implementation for a specific type, its
-method resolution order is used to find a more generic implementation.
-The original function decorated with ``@singledispatch`` is registered
-for the base ``object`` type, which means it is used if no better
-implementation is found.
+Where there is no registered implementation for a specific type, its method resolution order is used to find a more generic implementation. The original function decorated with ``@singledispatch`` is registered for the base ``object`` type, which means it is used if no better implementation is found.
 
-To check which implementation will the generic function choose for a
-given type, use the ``dispatch()`` attribute::
+To check which implementation will the generic function choose for a given type, use the ``dispatch()`` attribute::
 
-    >>> fun.dispatch(float)
-    <function fun_num at 0x1035a2840>
-    >>> fun.dispatch(dict)    # note: default implementation
-    <function fun at 0x103fe0000>
+    >>> a.fun.dispatch(float)
+    <function MyClass.fun_num at 0x1035a2840>
+    >>> a.fun.dispatch(dict)    # note: default implementation
+    <function MyClass.fun at 0x103fe0000>
 
-To access all registered implementations, use the read-only ``registry``
-attribute::
+To access all registered implementations, use the read-only ``registry`` attribute::
 
-    >>> fun.registry.keys()
+    >>> a.fun.registry.keys()
     dict_keys([<class 'NoneType'>, <class 'int'>, <class 'object'>,
               <class 'decimal.Decimal'>, <class 'list'>,
               <class 'float'>])
-    >>> fun.registry[float]
-    <function fun_num at 0x1035a2840>
-    >>> fun.registry[object]
-    <function fun at 0x103fe0000>
-
-Decorating class methods requires the class to inherit from
-``SingleDispatch``::
+    >>> a.fun.registry[float]
+    <function MyClass.fun_num at 0x1035a2840>
+    >>> a.fun.registry[object]
+    <function MyClass.fun at 0x103fe0000>
 
     >>> class BaseClass(SingleDispatch):
     ...     @singledispatch
@@ -312,19 +111,16 @@ Decorating class methods requires the class to inherit from
     >>> b.foo(1)
     'int'
 
-Subclasses can extend the type registry of the function on the base
-class with their own overrides. Because we do not want to modify the
-base class ``foo`` registry the ``methoddispatch.register`` decorator
-must be used instead of ``foo.register``. The module level ``register``
-function takes either the method name or the method itself as the first
-parameter and the dispatch type as the second.::
+Subclasses can extend the type registry of the function on the base class with their own overrides.
+Because we do not want to modify the base class ``foo`` registry the ``foo.overload`` decorator must be used
+instead of ``foo.register``.
 
     >>> class SubClass(BaseClass):
-    ...     @register('foo', float)
+    ...     @BaseClass.foo.register(float)
     ...     def foo_float(self, bar):
     ...         return 'float'
     ...
-    ...     @register(BaseClass.foo, str)
+    ...     @BaseClass.foo.register(str)
     ...     def foo_str(self, bar):
     ...         return 'str'
     ...
@@ -334,15 +130,13 @@ parameter and the dispatch type as the second.::
     >>> s.foo(1.0)
     'float'
 
-The ``SingleDispatch`` mixin class ensures that each subclass has it’s
-own independant copy of the dispatch registry::
+The ``SingleDispatch`` mixin class ensures that each subclass has it's own independant copy of the dispatch registry
 
     >>> b = BaseClass()
     >>> b.foo(1.0)
     'default'
 
-Method overrides do not need to provide the ``register`` decorator again
-to be used in the dispatch of ``foo``::
+Method overrides do not need to provide the ``register`` decorator again to be used in the dispatch of ``foo``
 
     >>> class SubClass2(BaseClass):
     ...     def foo_int(self, bar):
@@ -352,14 +146,23 @@ to be used in the dispatch of ``foo``::
     >>> s.foo(1)
     'my int'
 
-However, providing the register decorator with the same type will also
-work. Decorating a method override with a different type (not a good
-idea) will register the different type and leave the base-class handler
-in place for the orginal type.
+However, providing the register decorator with the same type will also work.
+Decorating a method override with a different type (not a good idea) will register the different type and leave the base-class handler in place for the orginal type.
 
-In Python 3.6 and later, for functions annotated with types, the
-decorator will infer the type of the first argument automatically as
-shown below::
+Method overrides can be specified on individual instances if necessary
+
+    >>> def foo_set(obj, bar):
+    ...    return 'set'
+    >>> b = BaseClass()
+    >>> b.foo.register(set, foo_set)
+    <function foo_set at 0x000002376A3D32F0>
+    >>> b.foo(set())
+    'set'
+    >>> b2 = BaseClass()
+    >>> b2.foo(set())
+    'default'
+
+In Python 3.6 and later, for functions annotated with types, the decorator will infer the type of the first argument automatically as shown below
 
     >>> class BaseClassAnno(SingleDispatch):
     ...     @singledispatch
@@ -371,18 +174,14 @@ shown below::
     ...         return 'int'
     ...
     >>> class SubClassAnno(BaseClassAnno):
-    ...     @register('foo')
+    ...     @BaseClassAnno.foo.register
     ...     def foo_float(self, bar: float):
     ...         return 'float'
 
-In Python 3.5 and earlier, the ``SingleDispatch`` class uses a
-meta-class ``SingleDispatchMeta`` to manage the dispatch registries.
-However in Python 3.6 and later the ``__init_subclass__`` method is used
-instead. If your class also inherits from an ABC interface you can use
-the ``SingleDispatchABCMeta`` metaclass in Python 3.5 and earlier.
+In Python 3.5 and earlier, the ``SingleDispatch`` class uses a meta-class ``SingleDispatchMeta`` to manage the dispatch registries.  However in Python 3.6 and later the ``__init_subclass__`` method is used instead.
+If your class also inherits from an ABC interface you can use the ``SingleDispatchABCMeta`` metaclass in Python 3.5 and earlier.
 
-Finally, accessing the method ``foo`` via a class will use the dispatch
-registry for that class::
+Finally, accessing the method ``foo`` via a class will use the dispatch registry for that class
 
       >>> SubClass2.foo(s, 1)
       'my int'
