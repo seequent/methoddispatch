@@ -2,11 +2,20 @@
 import unittest
 
 import methoddispatch
-from methoddispatch import singledispatch, register, SingleDispatch, SingleDispatchABC
+from methoddispatch import singledispatch, SingleDispatch
+try:
+    from methoddispatch import SingleDispatchABC
+except ImportError:
+    SingleDispatchABC = SingleDispatch
+
 import abc
 import doctest
 import six
 import sys
+
+
+def instance_foo(self, bar):
+    return 'instance'
 
 
 class BaseClass(SingleDispatch):
@@ -14,27 +23,44 @@ class BaseClass(SingleDispatch):
     def foo(self, bar):
         return 'default'
 
-    @foo.register(int)
+    @foo.add_overload(int)
     def foo_int(self, bar):
+        return 'int'
+
+    @foo.register(set)
+    def foo_set(self, bar):
+        return 'set'
+
+    @singledispatch
+    def bar(self, bar):
+        return 'default'
+
+    @bar.register(int)
+    def bar_int(self, bar):
         return 'int'
 
 
 class SubClass(BaseClass):
-    @register('foo', float)
+    @BaseClass.foo.register(float)
     def foo_float(self, bar):
         return 'float'
 
     def foo_int(self, bar):
         return 'sub int'
 
-    @register(BaseClass.foo, str)
+    @BaseClass.foo.register(str)
     def foo_str(self, bar):
         return 'str'
 
+
 class SubSubClass(SubClass):
-    @register('foo', list)
+    @SubClass.foo.register(list)
     def foo_list(self, bar):
         return 'list'
+
+    @methoddispatch.register('foo', tuple)
+    def foo_tuple(self, bar):
+        return 'tuple'
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -44,7 +70,7 @@ class IFoo(object):
         pass
 
 
-class MyClass(IFoo, SingleDispatchABC):
+class MyClass(SingleDispatchABC, IFoo):
     @singledispatch
     def foo(self, bar):
         return 'my default'
@@ -53,15 +79,9 @@ class MyClass(IFoo, SingleDispatchABC):
     def foo_int(self, bar):
         return 'my int'
 
-
-@singledispatch
-def func(a):
-    return 'default'
-
-
-@func.register(bool)
-def func_bool(a):
-    return not a
+    @foo.register(list)
+    def foo_list(self, bar):
+        return 'my list'
 
 
 class TestMethodDispatch(unittest.TestCase):
@@ -69,7 +89,10 @@ class TestMethodDispatch(unittest.TestCase):
         b = BaseClass()
         self.assertEqual(b.foo('text'), 'default')
         self.assertEqual(b.foo(1), 'int')
+        self.assertEqual(b.foo(set()), 'set')
         self.assertEqual(b.foo(1.0), 'default')
+        self.assertEqual(b.bar(1.0), 'default')
+        self.assertEqual(b.bar(1), 'int')
 
     def test_sub_class(self):
         s = SubClass()
@@ -92,6 +115,14 @@ class TestMethodDispatch(unittest.TestCase):
         self.assertEqual(b.foo(1.0), 'default')
         self.assertEqual(s.foo(1.0), 'float')
 
+    def test_instance_register(self):
+        b = BaseClass()
+        b2 = BaseClass()
+        b.foo.register(float, instance_foo)
+        self.assertEqual(BaseClass.foo(b, 1.0), 'default')
+        self.assertEqual(b.foo(1.0), 'instance')
+        self.assertEqual(b2.foo(1.0), 'default')
+
     def test_attempted_override(self):
         with self.assertRaises(RuntimeError):
             class SubClass2(BaseClass):
@@ -100,13 +131,9 @@ class TestMethodDispatch(unittest.TestCase):
 
     def test_abc_interface_support(self):
         m = MyClass()
-        self.assertEqual(m.foo('text'), 'my default')
-        self.assertEqual(m.foo(1), 'my int')
-
-    def test_pure_funcs(self):
-        self.assertEqual('default', func(self))
-        self.assertEqual(False, func(True))
-        self.assertEqual(True, func(False))
+        self.assertEqual('my default', m.foo('text'))
+        self.assertEqual('my int', m.foo(1))
+        self.assertEqual('my list', m.foo([]))
 
     def test_class_access(self):
         s = SubClass()
@@ -118,7 +145,7 @@ class TestMethodDispatch(unittest.TestCase):
         self.assertTrue(hasattr(SubClass.foo, 'dispatch'))
         self.assertTrue(hasattr(SubClass.foo, 'registry'))
         self.assertIs(SubClass.foo.dispatch(float), SubClass.__dict__['foo_float'])
-        self.assertEqual(set(SubClass.foo.registry.keys()), set([float, object, int, str]))
+        self.assertEqual(set(SubClass.foo.registry.keys()), set([float, object, set, int, str]))
 
     def test_instance_extra_attributes(self):
         """ Check that dispatch and registry attributes are accessible """
@@ -126,14 +153,14 @@ class TestMethodDispatch(unittest.TestCase):
         self.assertTrue(hasattr(s.foo, 'dispatch'))
         self.assertTrue(hasattr(s.foo, 'registry'))
         self.assertIs(s.foo.dispatch(float), SubClass.__dict__['foo_float'])
-        self.assertEqual(set(s.foo.registry.keys()), set([float, object, int, str]))
+        self.assertEqual(set(s.foo.registry.keys()), set([float, object, set, int, str]))
 
     @unittest.skipIf(six.PY2, 'docs are in python3 syntax')
     def test_docs(self):
         num_failures, num_tests = doctest.testmod(methoddispatch, name='methoddispatch')
         # we expect 6 failures as a result like <function fun_num at 0x1035a2840> is not deterministic
-        self.assertLessEqual(num_failures, 7)
-        self.assertGreater(num_tests, 30)
+        self.assertLessEqual(num_failures, 6)
+        self.assertGreaterEqual(num_tests, 40)
 
     @unittest.skipIf(sys.version_info < (3, 6), 'python < 3.6')
     def test_annotations(self):
@@ -143,12 +170,18 @@ class TestMethodDispatch(unittest.TestCase):
 annotation_tests = """
 def test_annotations(self):
     class AnnClass(BaseClass):
-        @register('foo')
+        @BaseClass.foo.register
         def foo_int(self, bar: int):
-            return 'ann int'
+            return 'an int'
 
     c = AnnClass()
-    self.assertEqual(c.foo(1), 'ann int')
+    self.assertEqual(c.foo(1), 'an int')
 
+    def foo_float(obj: AnnClass, bar: float):
+        return 'float'
+
+    c.foo.register(foo_float)
+    self.assertEqual(c.foo(1.23), 'float')
+ 
 test_annotations(self)
 """
