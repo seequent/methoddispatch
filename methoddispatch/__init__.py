@@ -137,7 +137,7 @@ str
 >>> b2.fun('hello')
 hello
 
-In Python 3.6 and later, for functions annotated with types, the decorator will infer the type of the first argument automatically as shown below
+For functions annotated with types, the decorator will infer the type of the first argument automatically as shown below
 
 >>> class MyClassAnno(SingleDispatch):
 ...     @singledispatch
@@ -152,6 +152,8 @@ In Python 3.6 and later, for functions annotated with types, the decorator will 
 ...     @MyClassAnno.fun.register
 ...     def fun_float(self, arg: float):
 ...         print('float')
+
+Note that these types are used at runtine and so concrete classes need to be used, not typing generics.
 
 Finally, accessing the method ``fun`` via a class will use the dispatch registry for that class
 
