@@ -2,22 +2,17 @@
 import unittest
 
 import methoddispatch
-from methoddispatch import singledispatch, SingleDispatch
-try:
-    from methoddispatch import SingleDispatchABC
-except ImportError:
-    SingleDispatchABC = SingleDispatch
+from methoddispatch import singledispatch
 
 import abc
 import doctest
-import sys
 
 
 def instance_foo(self, bar):
     return 'instance'
 
 
-class BaseClass(SingleDispatch):
+class BaseClass:
     @singledispatch
     def foo(self, bar):
         return 'default'
@@ -68,7 +63,7 @@ class IFoo(metaclass=abc.ABCMeta):
         pass
 
 
-class MyClass(SingleDispatchABC, IFoo):
+class MyClass(IFoo):
     @singledispatch
     def foo(self, bar):
         return 'my default'
@@ -80,6 +75,28 @@ class MyClass(SingleDispatchABC, IFoo):
     @foo.register(list)
     def foo_list(self, bar):
         return 'my list'
+
+
+class MidClass(BaseClass):
+    @BaseClass.foo.register(float)
+    def foo_float(self, bar):
+        return 'mid float'
+
+    @BaseClass.foo.register(str)
+    def foo_str(self, bar):
+        return 'mid str'
+
+
+class SubMidClass(MidClass):
+    @SubClass.foo.register(list)
+    def foo_list(self, bar):
+        return 'list'
+
+
+class AnnClass(BaseClass):
+    @BaseClass.foo.register
+    def foo_int(self, bar: int):
+        return 'an int'
 
 
 class TestMethodDispatch(unittest.TestCase):
@@ -107,6 +124,14 @@ class TestMethodDispatch(unittest.TestCase):
         self.assertEqual(s.foo(1.0), 'float')
         self.assertEqual(s.foo(''), 'str')
 
+    def test_sub_mid_class(self):
+        # this checks that we are using MRO and not just bases.
+        s = SubMidClass()
+        self.assertEqual(s.foo([]), 'list')
+        self.assertEqual(s.foo(1), 'int')
+        self.assertEqual(s.foo(1.0), 'mid float')
+        self.assertEqual(s.foo(''), 'mid str')
+
     def test_independence(self):
         b = BaseClass()
         s = SubClass()
@@ -121,11 +146,21 @@ class TestMethodDispatch(unittest.TestCase):
         self.assertEqual(b.foo(1.0), 'instance')
         self.assertEqual(b2.foo(1.0), 'default')
 
-    def test_attempted_override(self):
-        with self.assertRaises(RuntimeError):
-            class SubClass2(BaseClass):
-                def foo(self, bar):
-                    pass
+    def test_override(self):
+        class SubClass2(BaseClass):
+            def foo(self, bar):
+                return None
+        s = SubClass2()
+        self.assertEqual(None, s.foo('bar'))
+        self.assertEqual(None, s.foo(set()))
+
+    def test_override_super(self):
+        class SubClass2(BaseClass):
+            def foo(self, bar):
+                return super().foo(bar)
+        s = SubClass2()
+        self.assertEqual('default', s.foo('bar'))
+        self.assertEqual('set', s.foo(set()))
 
     def test_abc_interface_support(self):
         m = MyClass()
@@ -160,19 +195,26 @@ class TestMethodDispatch(unittest.TestCase):
         self.assertGreaterEqual(num_tests, 30)
 
     def test_annotations(self):
-        class AnnClass(BaseClass):
-            @BaseClass.foo.register
-            def foo_int(self, bar: int):
-                return 'an int'
-
         c = AnnClass()
         self.assertEqual(c.foo(1), 'an int')
 
         def foo_float(obj: AnnClass, bar: float):
             return 'float'
 
+        def foo_set(obj, bar: set):
+            return 'set'
+
         c.foo.register(foo_float)
+        c.foo.register(foo_set)
         self.assertEqual(c.foo(1.23), 'float')
+        self.assertEqual(c.foo(set()), 'set')
+
+    def test_wrong_annotation(self):
+        with self.assertRaises(TypeError):
+            class AnnClass2(BaseClass):
+                @BaseClass.foo.register
+                def foo_int(self, bar, baz: str):
+                    return 'an int'
 
 
 if __name__ == '__main__':

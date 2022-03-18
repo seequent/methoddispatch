@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-# methoddispatch
+methoddispatch
+==============
 
-[![Build Status](https://travis-ci.com/seequent/methoddispatch.svg?branch=master)](https://travis-ci.com/seequent/methoddispatch)
 
 Python 3.4 added the ``singledispatch`` decorator to the ``functools`` standard library module.
 Python 3.8 added the ``singledispatchmethod`` decorator to the ``functools`` standard library module,
@@ -10,16 +10,14 @@ however it does not allow sub-classes to modify the dispatch table independantly
 
 This library adds this functionality.
 
-To define a generic method , decorate it with the ``@singledispatch`` decorator. Note that the dispatch happens on the
-type of the first argument, create your function accordingly.
+To define a generic method , decorate it with the ``@singledispatch`` decorator. Note that the dispatch happens on the type of the first argument, create your function accordingly.
 To add overloaded implementations to the function, use the ``register()`` attribute of the generic function.
 It is a decorator, taking a type parameter and decorating a function implementing the operation for that type.
-The ``register()`` attribute returns the undecorated function which enables decorator stacking,
-pickling, as well as creating unit tests for each variant independently
+The ``register()`` attribute returns the undecorated function which enables decorator stacking, pickling, as well as creating unit tests for each variant independently
 
->>> from methoddispatch import singledispatch, register, SingleDispatch
+>>> from methoddispatch import singledispatch
 >>> from decimal import Decimal
->>> class MyClass(SingleDispatch):
+>>> class MyClass:
 ...     @singledispatch
 ...     def fun(self, arg, verbose=False):
 ...         if verbose:
@@ -46,8 +44,8 @@ pickling, as well as creating unit tests for each variant independently
 ...             print("Half of your number:", end=" ")
 ...         print(arg / 2)
 
-The ``register()`` attribute only works inside a class statement, relying on ``SingleDispatch.__init_subclass__``
-to create the actual dispatch table.  This also means that (unlike functools.singledispatch) two methods
+The ``register()`` attribute only works inside a class statement as the dispatch table is assembled
+from class attributes.  This also means that (unlike functools.singledispatch) two methods
 with the same name cannot be registered as only the last one will be in the class dictionary.
 
 Functions not defined in the class can be registered using the ``add_overload`` attribute.
@@ -97,7 +95,7 @@ dict_keys([<class 'NoneType'>, <class 'int'>, <class 'object'>,
 <function MyClass.fun at 0x103fe0000>
 
 Subclasses can extend the type registry of the function on the base class with their own overrides.
-The ``SingleDispatch`` mixin class ensures that each subclass has it's own independant copy of the dispatch registry
+Each subclass has it's own independant copy of the dispatch registry
 
 >>> class SubClass(MyClass):
 ...     @MyClass.fun.register(str)
@@ -139,7 +137,7 @@ hello
 
 For functions annotated with types, the decorator will infer the type of the first argument automatically as shown below
 
->>> class MyClassAnno(SingleDispatch):
+>>> class MyClassAnno:
 ...     @singledispatch
 ...     def fun(self, arg):
 ...         print('default')
@@ -152,8 +150,6 @@ For functions annotated with types, the decorator will infer the type of the fir
 ...     @MyClassAnno.fun.register
 ...     def fun_float(self, arg: float):
 ...         print('float')
-
-Note that these types are used at runtine and so concrete classes need to be used, not typing generics.
 
 Finally, accessing the method ``fun`` via a class will use the dispatch registry for that class
 

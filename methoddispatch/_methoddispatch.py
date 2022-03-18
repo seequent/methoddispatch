@@ -1,12 +1,11 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
+from _weakrefset import WeakSet
 from abc import get_cache_token
 from functools import update_wrapper, _find_impl
 from types import MappingProxyType
 from weakref import WeakKeyDictionary
-import warnings
 
-__all__ = ['singledispatch', 'register', 'SingleDispatch']
+__all__ = ['singledispatch']
 
 
 ################################################################################
@@ -25,6 +24,7 @@ class singledispatch:
     """
     def __init__(self, func):
         self._registry = {}
+        self._classes = WeakSet()
         self.dispatch_cache = WeakKeyDictionary()
         self.func = func
         self.cache_token = None
@@ -72,15 +72,27 @@ class singledispatch:
         return func
 
     def __get__(self, instance, owner=None):
-        if owner is not None and not issubclass(owner, SingleDispatch):
-            raise ValueError('singledispatch can only be used on methods of SingleDispatch subclasses')
+        me = self
+        if owner is not None and owner not in self._classes:
+            # unfortunately we can't rely on base classes having been processed already.
+            for base in owner.mro()[::-1]:
+                if base is object:
+                    continue
+                if base not in self._classes:
+                    _fixup_class_attributes(base)
+                    self._classes.add(base)
+            # owners singledispatch attributes have been changed
+            # which means caller may want the new attribute
+            me = owner.__dict__.get(self.__name__, self)
+            if not isinstance(me, singledispatch):
+                me = self
         if instance is not None:
-            wrapper = BoundSDMethod(self, instance)
+            wrapper = BoundSDMethod(me, instance)
         elif owner is not None:
-            wrapper = UnboundSDMethod(self)
+            wrapper = UnboundSDMethod(me, owner)
         else:
-            return self
-        update_wrapper(wrapper, self.func)
+            return me
+        update_wrapper(wrapper, me.func)
         return wrapper
 
     def __call__(self, *args, **kw):
@@ -91,7 +103,9 @@ class singledispatch:
 
     def copy(self):
         new = singledispatch(self.func)
+        new.__name__ = self.__name__
         new._registry.update(self._registry)
+        new._classes = self._classes  # borg
         return new
 
     def get_registered_types(self):
@@ -177,7 +191,7 @@ class BoundSDMethod:
 class UnboundSDMethod:
     """ An unbound singledispatch method """
 
-    def __init__(self, s_d):
+    def __init__(self, s_d, cls):
         self._s_d = s_d
 
     def copy(self):
@@ -204,20 +218,23 @@ class UnboundSDMethod:
 
 
 def _fixup_class_attributes(cls):
+    """ replaces/adds any singledispatch attributes from base classes into this class so that the dispatch tables
+    are kept independant.
+    """
     generics = []
     attributes = cls.__dict__
     patched = set()
     for base in cls.mro()[1:]:
-        if issubclass(base, SingleDispatch) and base is not SingleDispatch:
-            for name, value in base.__dict__.items():
-                if isinstance(value, singledispatch) and name not in patched:
-                    if name in attributes:
-                        raise RuntimeError('Cannot override generic function.  '
-                                           'Try @{name}.register(object) instead.'.format(name=name))
-                    generic = value.copy()
-                    setattr(cls, name, generic)
-                    patched.add(name)
-                    generics.append(generic)
+        if base is object:
+            continue
+        for name, value in base.__dict__.items():
+            if isinstance(value, singledispatch) and name not in patched:
+                if name in attributes:
+                    continue
+                generic = value.copy()
+                setattr(cls, name, generic)
+                patched.add(name)
+                generics.append(generic)
     for name, value in attributes.items():
         if not callable(value) or isinstance(value, singledispatch):
             continue
@@ -234,27 +251,3 @@ def _fixup_class_attributes(cls):
                     if name == f.__name__:
                         generic.add_overload(cls, value)
                         break
-
-
-class SingleDispatch:
-    """
-    Base or mixin class to enable single dispatch on methods.
-    """
-    def __init_subclass__(cls, **kwargs):
-        super().__init_subclass__(**kwargs)
-        _fixup_class_attributes(cls)
-
-
-def register(name, cls=None):
-    """ Decorator for methods on a sub-class to register an overload on a base-class generic method.
-    :param name: is the name of the generic method on the base class, or the unbound method itself
-    :param cls: is the type to register or may be omitted or None to use the annotated parameter type.
-    """
-    warnings.warn('Use @BaseClass.method.register() instead of register', DeprecationWarning, stacklevel=2)
-    name = getattr(name, '__name__', name)  # __name__ exists on sd_method courtesy of update_wrapper
-    def wrapper(func):
-        overloads = getattr(func, '_overloads', [])
-        overloads.append((name, cls))
-        func._overloads = overloads
-        return func
-    return wrapper
