@@ -1,24 +1,19 @@
 methoddispatch
 ==============
 
-|Build Status|
-
 
 Python 3.4 added the ``singledispatch`` decorator to the ``functools`` standard library module.
-This library adds this functionality to instance methods.
+Python 3.8 added the ``singledispatchmethod`` decorator to the ``functools`` standard library module,
+however it does not allow sub-classes to modify the dispatch table independantly of the base class.
 
-**Deprecation Warning**
-``methoddispatch`` 2 and earlier worked on standard functions too, and could be used in place of ``functools.singledispatch``.
-Version 3 no longer supports this functionality as it breaks the Zen of Python "There should be only one way to do something".
-Doing this also paved the way to support a better API and deprecate the ``methoddispatch.register`` function.
-
+This library adds this functionality.
 
 To define a generic method , decorate it with the ``@singledispatch`` decorator. Note that the dispatch happens on the type of the first argument, create your function accordingly.
 To add overloaded implementations to the function, use the ``register()`` attribute of the generic function.
 It is a decorator, taking a type parameter and decorating a function implementing the operation for that type.
 The ``register()`` attribute returns the undecorated function which enables decorator stacking, pickling, as well as creating unit tests for each variant independently
 
->>> from methoddispatch import singledispatch, register, SingleDispatch
+>>> from methoddispatch import singledispatch, SingleDispatch
 >>> from decimal import Decimal
 >>> class MyClass(SingleDispatch):
 ...     @singledispatch
@@ -138,7 +133,7 @@ str
 >>> b2.fun('hello')
 hello
 
-In Python 3.6 and later, for functions annotated with types, the decorator will infer the type of the first argument automatically as shown below
+For functions annotated with types, the decorator will infer the type of the first argument automatically as shown below
 
 >>> class MyClassAnno(SingleDispatch):
 ...     @singledispatch
@@ -154,9 +149,6 @@ In Python 3.6 and later, for functions annotated with types, the decorator will 
 ...     def fun_float(self, arg: float):
 ...         print('float')
 
-In Python 3.5 and earlier, the ``SingleDispatch`` class uses a meta-class ``SingleDispatchMeta`` to manage the dispatch registries.  However in Python 3.6 and later the ``__init_subclass__`` method is used instead.
-If your class also inherits from an ABC interface you can use the ``SingleDispatchABCMeta`` metaclass in Python 3.5 and earlier.
-
 Finally, accessing the method ``fun`` via a class will use the dispatch registry for that class
 
 >>> SubClass2.fun(s, 1)
@@ -164,7 +156,3 @@ subclass int
 >>> MyClass.fun(s, 1)
 1
 
-"""
-
-.. |Build Status| image:: https://travis-ci.com/seequent/methoddispatch.svg?branch=master
-   :target: https://travis-ci.com/seequent/methoddispatch

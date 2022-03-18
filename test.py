@@ -10,7 +10,6 @@ except ImportError:
 
 import abc
 import doctest
-import six
 import sys
 
 
@@ -58,13 +57,12 @@ class SubSubClass(SubClass):
     def foo_list(self, bar):
         return 'list'
 
-    @methoddispatch.register('foo', tuple)
+    @SubClass.foo.register(tuple)
     def foo_tuple(self, bar):
         return 'tuple'
 
 
-@six.add_metaclass(abc.ABCMeta)
-class IFoo(object):
+class IFoo(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def foo(self, bar):
         pass
@@ -155,33 +153,27 @@ class TestMethodDispatch(unittest.TestCase):
         self.assertIs(s.foo.dispatch(float), SubClass.__dict__['foo_float'])
         self.assertEqual(set(s.foo.registry.keys()), set([float, object, set, int, str]))
 
-    @unittest.skipIf(six.PY2, 'docs are in python3 syntax')
     def test_docs(self):
         num_failures, num_tests = doctest.testmod(methoddispatch, name='methoddispatch')
         # we expect 6 failures as a result like <function fun_num at 0x1035a2840> is not deterministic
         self.assertLessEqual(num_failures, 6)
         self.assertGreaterEqual(num_tests, 30)
 
-    @unittest.skipIf(sys.version_info < (3, 6), 'python < 3.6')
     def test_annotations(self):
-        exec(annotation_tests)
+        class AnnClass(BaseClass):
+            @BaseClass.foo.register
+            def foo_int(self, bar: int):
+                return 'an int'
+
+        c = AnnClass()
+        self.assertEqual(c.foo(1), 'an int')
+
+        def foo_float(obj: AnnClass, bar: float):
+            return 'float'
+
+        c.foo.register(foo_float)
+        self.assertEqual(c.foo(1.23), 'float')
 
 
-annotation_tests = """
-def test_annotations(self):
-    class AnnClass(BaseClass):
-        @BaseClass.foo.register
-        def foo_int(self, bar: int):
-            return 'an int'
-
-    c = AnnClass()
-    self.assertEqual(c.foo(1), 'an int')
-
-    def foo_float(obj: AnnClass, bar: float):
-        return 'float'
-
-    c.foo.register(foo_float)
-    self.assertEqual(c.foo(1.23), 'float')
- 
-test_annotations(self)
-"""
+if __name__ == '__main__':
+    unittest.main()
