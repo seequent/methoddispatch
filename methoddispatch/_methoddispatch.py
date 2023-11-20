@@ -207,17 +207,28 @@ def _fixup_class_attributes(cls):
     generics = []
     attributes = cls.__dict__
     patched = set()
+    patched_func_name = set()
     for base in cls.mro()[1:]:
         if issubclass(base, SingleDispatch) and base is not SingleDispatch:
+            func_name_will_patch = set()
             for name, value in base.__dict__.items():
-                if isinstance(value, singledispatch) and name not in patched:
-                    if name in attributes:
+                if isinstance(value, singledispatch):
+                    if name in attributes and name not in patched:
                         raise RuntimeError('Cannot override generic function.  '
                                            'Try @{name}.register(object) instead.'.format(name=name))
                     generic = value.copy()
-                    setattr(cls, name, generic)
-                    patched.add(name)
-                    generics.append(generic)
+                    if name in patched:
+                        for generic_cls, generic_func in generic.registry.items():
+                            if generic_func.__name__ not in patched_func_name:
+                                getattr(cls, name).add_overload(generic_cls, generic_func)
+                                patched_func_name.add(name)
+                    else:
+                        setattr(cls, name, generic)
+                        patched.add(name)
+                        generics.append(generic)
+                else:
+                    func_name_will_patch.add(name)
+            patched_func_name = patched_func_name.union(func_name_will_patch)
     for name, value in attributes.items():
         if not callable(value) or isinstance(value, singledispatch):
             continue

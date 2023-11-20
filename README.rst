@@ -156,3 +156,57 @@ subclass int
 >>> MyClass.fun(s, 1)
 1
 
+You can use Mixin or multiple inheritance to add a generic method to a class, like this:
+
+>>> class BaseClassForMixin(SingleDispatch):
+...
+...    def __init__(self):
+...        self.mixin_base = 0
+...
+...    @singledispatch
+...    def foo(self, bar):
+...        self.mixin_base += 1
+...        return 'default'
+...
+>>> class SubClass2Mixin(BaseClassForMixin):
+...    def __init__(self):
+...        self.mixin_2 = 1
+...        super().__init__()
+...
+...    @BaseClassForMixin.foo.register(int)
+...    def foo_int(self, bar):
+...        self.mixin_2 += 1
+...        return 'int'
+...
+>>> class SubClass3Mixin(BaseClassForMixin):
+...    def __init__(self):
+...        self.mixin_3 = 1
+...        super().__init__()
+...
+...    @BaseClassForMixin.foo.register(str)
+...    def foo_str(self, bar):
+...        self.mixin_3 += 2
+...        return 'str'
+...
+>>> class SubClass4Mixin(BaseClassForMixin):
+...    @BaseClassForMixin.foo.register(set)
+...    def foo_set(self, bar):
+...        return 'set'
+...
+>>> class SubClassWithMixin(SubClass4Mixin, SubClass3Mixin, SubClass2Mixin, BaseClassForMixin):
+...    def __init__(self):
+...        self.master = 10
+...        super().__init__()
+...
+...    @BaseClassForMixin.foo.register(float)
+...    def foo_float(self, bar):
+...        self.master += 1
+...        return 'float'
+
+Then you can use it like this:
+
+>>> b = SubClassWithMixin()
+>>> b.foo('text')
+'str'
+>>> b.mixin_3
+2

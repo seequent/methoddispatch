@@ -10,7 +10,6 @@ except ImportError:
 
 import abc
 import doctest
-import sys
 
 
 def instance_foo(self, bar):
@@ -37,6 +36,56 @@ class BaseClass(SingleDispatch):
     @bar.register(int)
     def bar_int(self, bar):
         return 'int'
+
+
+class BaseClassForMixin(SingleDispatch):
+
+    def __init__(self):
+        self.mixin_base = 0
+
+    @singledispatch
+    def foo(self, bar):
+        self.mixin_base += 1
+        return 'default'
+
+
+class SubClass2Mixin(BaseClassForMixin):
+    def __init__(self):
+        self.mixin_2 = 1
+        super().__init__()
+
+    @BaseClassForMixin.foo.register(int)
+    def foo_int(self, bar):
+        self.mixin_2 += 1
+        return 'int'
+
+
+class SubClass3Mixin(BaseClassForMixin):
+    def __init__(self):
+        self.mixin_3 = 1
+        super().__init__()
+
+    @BaseClassForMixin.foo.register(str)
+    def foo_str(self, bar):
+        self.mixin_3 += 2
+        return 'str'
+
+
+class SubClass4Mixin(BaseClassForMixin):
+    @BaseClassForMixin.foo.register(set)
+    def foo_set(self, bar):
+        return 'set'
+
+
+class SubClassWithMixin(SubClass4Mixin, SubClass3Mixin, SubClass2Mixin, BaseClassForMixin):
+    def __init__(self):
+        self.master = 10
+        super().__init__()
+
+    @BaseClassForMixin.foo.register(float)
+    def foo_float(self, bar):
+        self.master += 1
+        return 'float'
 
 
 class SubClass(BaseClass):
@@ -155,9 +204,9 @@ class TestMethodDispatch(unittest.TestCase):
 
     def test_docs(self):
         num_failures, num_tests = doctest.testmod(methoddispatch, name='methoddispatch')
-        # we expect 6 failures as a result like <function fun_num at 0x1035a2840> is not deterministic
-        self.assertLessEqual(num_failures, 6)
-        self.assertGreaterEqual(num_tests, 30)
+        # we expect 7 failures as a result like <function fun_num at 0x1035a2840> is not deterministic
+        self.assertLessEqual(num_failures, 7)
+        self.assertGreaterEqual(num_tests, 43)
 
     def test_annotations(self):
         class AnnClass(BaseClass):
@@ -173,6 +222,18 @@ class TestMethodDispatch(unittest.TestCase):
 
         c.foo.register(foo_float)
         self.assertEqual(c.foo(1.23), 'float')
+
+    def test_class_with_mixins(self):
+        b = SubClassWithMixin()
+        self.assertEqual(b.foo('text'), 'str')
+        self.assertEqual(b.mixin_3, 3)
+        self.assertEqual(b.foo(1), 'int')
+        self.assertEqual(b.mixin_2, 2)
+        self.assertEqual(b.foo(set()), 'set')
+        self.assertEqual(b.foo(1.0), 'float')
+        self.assertEqual(b.master, 11)
+        self.assertEqual(b.foo(list()), 'default')
+        self.assertEqual(b.mixin_base, 1)
 
 
 if __name__ == '__main__':
