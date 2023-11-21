@@ -118,15 +118,15 @@ One way is to override a base-class method that is in the base class dispatch ta
 Method overrides do not need to provide the ``register`` decorator again to be used in the dispatch of ``fun``, you can
 simply override the specific dispatch function you want to modify.
 
->>> class Mixin1(MyClass):
+>>> class SubClass2(MyClass):
 ...     def fun_int(self, arg, verbose=False):
 ...         print('subclass int')
 ...
->>> s = Mixin1()
+>>> s = SubClass2()
 >>> s.fun(1)
 subclass int
 
-The other way is to register a method with the same type using the `register` method.
+The other way is to register a method with an existing type using the `register` method.
 
 >>> class SubClass3(MyClass):
 ...    @MyClass.fun.register(int)
@@ -196,7 +196,7 @@ This means that ``fun_list`` will be called for all list instances regardless of
 
 Accessing the method ``fun`` via a class will use the dispatch registry for that class
 
->>> Mixin1.fun(s, 1)
+>>> SubClass2.fun(s, 1)
 subclass int
 >>> MyClass.fun(s, 1)
 1

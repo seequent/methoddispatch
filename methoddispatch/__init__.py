@@ -118,11 +118,11 @@ There are two ways to override the dispatch function for a given type.
 One way is to override a base-class method that is in the base class dispatch table.
 Method overrides do not need to provide the ``register`` decorator again to be used in the dispatch of ``fun``
 
->>> class Mixin1(MyClass):
+>>> class SubClass2(MyClass):
 ...     def fun_int(self, arg, verbose=False):
 ...         print('subclass2 int')
 ...
->>> s = Mixin1()
+>>> s = SubClass2()
 >>> s.fun(1)
 subclass2 int
 
@@ -185,7 +185,7 @@ Note that these types are used at runtine and so concrete classes need to be use
 
 Finally, accessing the method ``fun`` via a class will use the dispatch registry for that class
 
->>> Mixin1.fun(s, 1)
+>>> SubClass2.fun(s, 1)
 subclass2 int
 >>> MyClass.fun(s, 1)
 1
@@ -244,7 +244,7 @@ SubClassWithMixins
 
 from ._methoddispatch import *
 
-__version__ = '5.0.0'
+__version__ = '5.0.1'
 __author__ = 'Seequent Ltd'
 __license__ = 'BSD'
 __copyright__ = 'Copyright 2023 Seequent Ltd'
