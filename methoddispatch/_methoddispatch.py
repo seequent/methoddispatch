@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from abc import get_cache_token
-from functools import update_wrapper, _find_impl
+from functools import _find_impl, update_wrapper
 from types import MappingProxyType
-from weakref import WeakKeyDictionary
 import warnings
+from weakref import WeakKeyDictionary
 
 __all__ = ['singledispatch', 'register', 'SingleDispatch']
 
@@ -126,6 +126,8 @@ def _get_class_from_annotation(func):
             f"on an annotated function."
         )
     cls = argspec.annotations.get(argname)
+    if not isinstance(cls, type) and hasattr(cls, '__origin__'):
+        cls = cls.__origin__
     assert isinstance(cls, type), (
         f"Invalid annotation for {argname!r}. {cls!r} is not a class."
     )
@@ -207,28 +209,22 @@ def _fixup_class_attributes(cls):
     generics = []
     attributes = cls.__dict__
     patched = set()
-    patched_func_name = set()
-    for base in cls.mro()[1:]:
+    for base in cls.__bases__[::-1]:
         if issubclass(base, SingleDispatch) and base is not SingleDispatch:
-            func_name_will_patch = set()
             for name, value in base.__dict__.items():
-                if isinstance(value, singledispatch):
-                    if name in attributes and name not in patched:
-                        raise RuntimeError('Cannot override generic function.  '
-                                           'Try @{name}.register(object) instead.'.format(name=name))
-                    generic = value.copy()
-                    if name in patched:
-                        for generic_cls, generic_func in generic.registry.items():
-                            if generic_func.__name__ not in patched_func_name:
-                                getattr(cls, name).add_overload(generic_cls, generic_func)
-                                patched_func_name.add(name)
-                    else:
-                        setattr(cls, name, generic)
-                        patched.add(name)
-                        generics.append(generic)
+                if not isinstance(value, singledispatch):
+                    continue
+                if name in attributes and name not in patched:
+                    raise RuntimeError('Cannot override generic function.  '
+                                       f'Try @{base.__name__}.{name}.register(object) instead.')
+                generic = value.copy()
+                if name in patched:
+                    for generic_cls, generic_func in generic.registry.items():
+                        getattr(cls, name).add_overload(generic_cls, generic_func)
                 else:
-                    func_name_will_patch.add(name)
-            patched_func_name = patched_func_name.union(func_name_will_patch)
+                    setattr(cls, name, generic)
+                    patched.add(name)
+                    generics.append(generic)
     for name, value in attributes.items():
         if not callable(value) or isinstance(value, singledispatch):
             continue

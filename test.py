@@ -1,15 +1,11 @@
 # -*- coding: utf-8 -*-
+import abc
+import doctest
+from typing import List
 import unittest
 
 import methoddispatch
 from methoddispatch import singledispatch, SingleDispatch
-try:
-    from methoddispatch import SingleDispatchABC
-except ImportError:
-    SingleDispatchABC = SingleDispatch
-
-import abc
-import doctest
 
 
 def instance_foo(self, bar):
@@ -41,51 +37,54 @@ class BaseClass(SingleDispatch):
 class BaseClassForMixin(SingleDispatch):
 
     def __init__(self):
-        self.mixin_base = 0
+        self.dispatched_by = ''
 
     @singledispatch
     def foo(self, bar):
-        self.mixin_base += 1
+        self.dispatched_by = 'BaseClass'
         return 'default'
+
+    def foo_str(self, bar):
+        return 'base'
 
 
 class SubClass2Mixin(BaseClassForMixin):
-    def __init__(self):
-        self.mixin_2 = 1
-        super().__init__()
 
     @BaseClassForMixin.foo.register(int)
     def foo_int(self, bar):
-        self.mixin_2 += 1
+        self.dispatched_by = 'SubClass2'
         return 'int'
-
-
-class SubClass3Mixin(BaseClassForMixin):
-    def __init__(self):
-        self.mixin_3 = 1
-        super().__init__()
 
     @BaseClassForMixin.foo.register(str)
     def foo_str(self, bar):
-        self.mixin_3 += 2
-        return 'str'
+        v = super().foo_str(bar)
+        self.dispatched_by = 'SubClass2'
+        return v + ' str2'
 
 
-class SubClass4Mixin(BaseClassForMixin):
-    @BaseClassForMixin.foo.register(set)
-    def foo_set(self, bar):
-        return 'set'
+class SubClass3Mixin(BaseClassForMixin):
 
+    @BaseClassForMixin.foo.register(str)
+    def foo_str(self, bar):
+        v = super().foo_str(bar)
+        self.dispatched_by = 'SubClass3'
+        return v + ' str3'
 
-class SubClassWithMixin(SubClass4Mixin, SubClass3Mixin, SubClass2Mixin, BaseClassForMixin):
-    def __init__(self):
-        self.master = 10
-        super().__init__()
+    @BaseClassForMixin.foo.register(int)
+    def foo_int2(self, bar):
+        self.dispatched_by = 'SubClass3'
+        return 'int'
 
-    @BaseClassForMixin.foo.register(float)
+class SubClassWithMixins32(SubClass3Mixin, SubClass2Mixin):
+
+    @SubClass3Mixin.foo.register(float)
     def foo_float(self, bar):
-        self.master += 1
+        self.dispatched_by = 'SubClassWithMixins'
         return 'float'
+
+
+class SubClassWithMixins23(SubClass2Mixin, SubClass3Mixin):
+    pass
 
 
 class SubClass(BaseClass):
@@ -117,7 +116,7 @@ class IFoo(metaclass=abc.ABCMeta):
         pass
 
 
-class MyClass(SingleDispatchABC, IFoo):
+class MyClass(SingleDispatch, IFoo):
     @singledispatch
     def foo(self, bar):
         return 'my default'
@@ -204,8 +203,7 @@ class TestMethodDispatch(unittest.TestCase):
 
     def test_docs(self):
         num_failures, num_tests = doctest.testmod(methoddispatch, name='methoddispatch')
-        # we expect 7 failures as a result like <function fun_num at 0x1035a2840> is not deterministic
-        self.assertLessEqual(num_failures, 7)
+        self.assertEqual(num_failures, 0)
         self.assertGreaterEqual(num_tests, 43)
 
     def test_annotations(self):
@@ -224,16 +222,40 @@ class TestMethodDispatch(unittest.TestCase):
         self.assertEqual(c.foo(1.23), 'float')
 
     def test_class_with_mixins(self):
-        b = SubClassWithMixin()
-        self.assertEqual(b.foo('text'), 'str')
-        self.assertEqual(b.mixin_3, 3)
+        b = SubClassWithMixins32()
+        self.assertEqual(b.foo('text'), 'base str2 str3')
+        self.assertEqual(b.dispatched_by, 'SubClass3')
         self.assertEqual(b.foo(1), 'int')
-        self.assertEqual(b.mixin_2, 2)
-        self.assertEqual(b.foo(set()), 'set')
+        self.assertEqual(b.dispatched_by, 'SubClass3')
         self.assertEqual(b.foo(1.0), 'float')
-        self.assertEqual(b.master, 11)
+        self.assertEqual(b.dispatched_by, 'SubClassWithMixins')
         self.assertEqual(b.foo(list()), 'default')
-        self.assertEqual(b.mixin_base, 1)
+        self.assertEqual(b.dispatched_by, 'BaseClass')
+
+
+    def test_class_with_mixins23(self):
+        b = SubClassWithMixins23()
+        self.assertEqual(b.foo('text'), 'base str3 str2')
+        self.assertEqual(b.dispatched_by, 'SubClass2')
+        self.assertEqual(b.foo(1), 'int')
+        self.assertEqual(b.dispatched_by, 'SubClass2')
+
+    def test_super(self):
+        s = SubClassWithMixins32()
+        self.assertEqual(super(SubClassWithMixins32, s).foo(23.2), 'default')
+        self.assertEqual(super(SubClass3Mixin, s).foo({'a'}), 'default')
+        self.assertEqual(super(SubClassWithMixins32, s).foo('a'), 'base str2 str3')
+        self.assertEqual(super(SubClass3Mixin, s).foo('a'), 'base str2')
+
+    def test_generic_type_hint(self):
+        class GenericTypeHint(SingleDispatch):
+            @singledispatch
+            def foo(self, bar):
+                pass
+
+            @foo.register
+            def foo_list(self, bar: List[str]):
+                pass
 
 
 if __name__ == '__main__':
